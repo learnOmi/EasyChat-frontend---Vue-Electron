@@ -3,27 +3,27 @@
     <div class="title drag">{{ isLogin ? '登录' : '注册' }}</div>
     <div class="login-form">
       <div class="error-ms">{{ errorMS }}</div>
-      <el-form :model="formData" ref="formDataRef" label-width="0px" @submit.prevent>
+      <el-form ref="formDataRef" :model="formData" label-width="0px" @submit.prevent>
         <!--input输入-->
         <el-form-item prop="email">
           <el-input
+            v-model.trim="formData.email"
             size="large"
             clearable
             placeholder="请输入邮箱"
-            maxLength="30"
-            v-model.trim="formData.email"
+            max-length="30"
             @focus="clearVerify"
           >
             <template #prefix><icon class="iconfont icon-youxiang" /></template>
           </el-input>
         </el-form-item>
-        <el-form-item prop="nickname" v-if="!isLogin">
+        <el-form-item v-if="!isLogin" prop="nickname">
           <el-input
+            v-model.trim="formData.nickname"
             size="large"
             clearable
             placeholder="请输入昵称"
-            maxLength="15"
-            v-model.trim="formData.nickname"
+            max-length="15"
             @focus="clearVerify"
           >
             <template #prefix><icon class="iconfont icon-geren" /></template>
@@ -31,22 +31,22 @@
         </el-form-item>
         <el-form-item prop="password">
           <el-input
+            v-model.trim="formData.password"
             size="large"
             clearable
             show-password
             placeholder="请输入密码"
-            v-model.trim="formData.password"
             @focus="clearVerify"
           >
             <template #prefix><icon class="iconfont icon-quanxian" /></template>
           </el-input>
         </el-form-item>
-        <el-form-item prop="repassword" v-if="!isLogin">
+        <el-form-item v-if="!isLogin" prop="repassword">
           <el-input
+            v-model.trim="formData.repassword"
             size="large"
             clearable
             show-password
-            v-model.trim="formData.repassword"
             placeholder="请再次输入密码"
             @focus="clearVerify"
           >
@@ -54,16 +54,19 @@
           </el-input>
         </el-form-item>
         <el-form-item prop="checkcode">
-          <el-input
-            size="large"
-            clearable
-            show-password
-            placeholder="请输入验证码"
-            v-model.trim="formData.checkcode"
-            @focus="clearVerify"
-          >
-            <template #prefix><icon class="iconfont icon-anquan" /></template>
-          </el-input>
+          <div class="check-code-panel">
+            <el-input
+              v-model.trim="formData.checkcode"
+              size="large"
+              clearable
+              show-password
+              placeholder="请输入验证码"
+              @focus="clearVerify"
+            >
+              <template #prefix><icon class="iconfont icon-anquan" /></template>
+            </el-input>
+            <img :src="checkCodeUrl" class="check-code" @click="changeCheckCode" />
+          </div>
         </el-form-item>
         <el-form-item prop="">
           <el-button type="primary" class="login-btn" @click="submit">{{
@@ -84,20 +87,55 @@
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 const { proxy } = getCurrentInstance()
 
+// 表单数据
 const formData = ref({})
+// 表单引用
 const formDataRef = ref()
+// 错误信息
 const errorMS = ref('')
+// 是否为登录状态
 const isLogin = ref(true)
+// 验证码图片URL
+const checkCodeUrl = ref(null)
 
+/**
+ * 切换登录/注册类型
+ */
 const changeOpType = () => {
+  // 向主进程发送登录/注册切换事件
   window.electron.ipcRenderer.send('loginOrRegister', !isLogin.value)
+  // 切换登录状态
   isLogin.value = !isLogin.value
+  // 在下一次DOM更新后执行
   nextTick(() => {
+    // 重置表单字段
     formDataRef.value.resetFields()
+    // 清除验证码
     clearVerify()
   })
 }
 
+/**
+ * 切换验证码
+ */
+const changeCheckCode = async () => {
+  // 请求验证码
+  let result = await proxy.Request({
+    url: proxy.Api.checkCode
+  })
+  // 如果请求失败，直接返回
+  if (!result) {
+    return
+  }
+  // 更新验证码URL
+  checkCodeUrl.value = result.data.checkCode
+  // 存储验证码key到localStorage
+  localStorage.setItem('checkCodeKey', result.data.checkCodeKey)
+}
+
+/**
+ * 提交表单
+ */
 const submit = () => {
   // formDataRef.value.validate(async (valid) => {
   //   if (valid) {

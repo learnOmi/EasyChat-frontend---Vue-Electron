@@ -2,7 +2,7 @@
   <!-- 使用 el-config-provider 配置 Element Plus 的全局设置 -->
   <!-- locale: 设置语言为中文 -->
   <!-- message: 配置消息的最大显示数量 -->
-  <el-config-provider :locale="zhCn" :message="config">
+  <el-config-provider :locale="locale" :message="config">
     <!-- 所有通过路由渲染的组件都能继承 Element Plus 的全局配置 -->
     <router-view />
   </el-config-provider>
