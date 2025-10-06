@@ -91,7 +91,7 @@ instance.interceptors.response.use(
     } else if (responseData.code === 901) {
       // 登录超时处理
       setTimeout(() => {
-        window.Electron.ipcRenderer.send('reLogin') // 通知 Electron 重新登录
+        window.electron.ipcRenderer.send('reLogin') // 通知 Electron 重新登录
       }, 2000)
       return Promise.reject({ showError: true, msg: '登录超时' })
     } else {

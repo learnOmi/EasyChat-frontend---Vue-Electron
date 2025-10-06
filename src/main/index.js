@@ -2,12 +2,13 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { onLoginOrRegister, onLoginSuccess } from './ipc'
 
-const login_width = 300;
-const login_height = 370;
-const register_height = 490;
+const login_width = 300
+const login_height = 370
+const register_height = 490
 
-let mainWindow;
+let mainWindow
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -15,7 +16,7 @@ function createWindow() {
     height: login_height,
     show: false,
     autoHideMenuBar: true,
-    titleBarStyle: "hidden",
+    titleBarStyle: 'hidden',
     resizable: false,
     frame: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -44,7 +45,7 @@ function createWindow() {
   }
 
   if (is.dev) {
-    mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools()
   }
 }
 
@@ -62,8 +63,8 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // 登陆或注册
-  ipcMain.on('loginOrRegister', (e, isLogin) => {
+  // 监听登陆或注册
+  onLoginOrRegister((isLogin) => {
     mainWindow.setResizable(true)
     if (isLogin) {
       mainWindow.setSize(login_width, login_height)
@@ -71,6 +72,14 @@ app.whenReady().then(() => {
       mainWindow.setSize(login_width, register_height)
     }
     mainWindow.setResizable(false)
+  })
+
+  onLoginSuccess((config) => {
+    mainWindow.setResizable(true)
+    mainWindow.setSize(850, 800)
+    mainWindow.center()
+    mainWindow.setMaximizable(true)
+    mainWindow.setMinimumSize(800, 600)
   })
 
   // IPC test

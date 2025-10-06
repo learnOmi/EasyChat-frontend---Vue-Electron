@@ -1,39 +1,41 @@
 {
+  // 配置文件版本号
   "version": "0.2.0",
+  // 调试配置数组
   "configurations": [
     {
+      // 配置名称，用于在调试器中选择
       "name": "Debug Main Process",
+      // 调试类型，这里使用Node.js
       "type": "node",
+      // 请求类型，launch表示启动新进程进行调试
       "request": "launch",
-      "cwd": "${workspaceRoot}",
-      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite",
+      // 工作目录，设置为当前工作区文件夹
+      "cwd": "${workspaceFolder}",
+      // 运行时可执行文件，使用nodemon来运行Electron主进程
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
+      // Windows平台特定的运行时可执行文件
       "windows": {
-        "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite.cmd"
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon.cmd"
       },
-      "runtimeArgs": ["--sourcemap"],
-      "env": {
-        "REMOTE_DEBUGGING_PORT": "9222"
-      }
-    },
-    {
-      "name": "Debug Renderer Process",
-      "port": 9222,
-      "request": "attach",
-      "type": "chrome",
-      "webRoot": "${workspaceFolder}/src/renderer",
-      "timeout": 60000,
-      "presentation": {
-        "hidden": true
-      }
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Debug All",
-      "configurations": ["Debug Main Process", "Debug Renderer Process"],
-      "presentation": {
-        "order": 1
-      }
+      // 传递给nodemon的参数
+      // 配置运行参数
+      "args": [
+        "--exec",           // 指定执行命令
+        "npm run build && ${workspaceFolder}/node_modules/.bin/electron",  // 构建项目并启动Electron
+        "--watch",          // 监视文件变化
+        "src/main",         // 监视src/main目录
+        "--ext",            // 指定监视的文件扩展名
+        "js,ts,json",       // 监视js、ts和json文件
+        "--inspect",        // 启动调试模式
+        "."                 // 当前目录作为工作目录
+      ],
+      // 输出捕获设置为标准输出(std)
+      "outputCapture": "std",
+      // 重启设置为true，表示在每次运行前会重启进程
+      "restart": true,
+      // 控制台设置为集成终端(integratedTerminal)
+      "console": "integratedTerminal"
     }
   ]
 }

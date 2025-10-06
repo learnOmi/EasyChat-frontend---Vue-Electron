@@ -1,7 +1,10 @@
 <template>
   <div class="login-panel">
     <div class="title drag">{{ isLogin ? '登录' : '注册' }}</div>
-    <div class="login-form">
+    <div v-if="showLoading" class="loading-panel">
+      <img src="../assets/loading.gif" alt="loading" />
+    </div>
+    <div v-else class="login-form">
       <div class="error-ms">{{ errorMS }}</div>
       <el-form ref="formDataRef" :model="formData" label-width="0px" @submit.prevent>
         <!--input输入-->
@@ -17,9 +20,9 @@
             <template #prefix><icon class="iconfont icon-youxiang" /></template>
           </el-input>
         </el-form-item>
-        <el-form-item v-if="!isLogin" prop="nickname">
+        <el-form-item v-if="!isLogin" prop="nickName">
           <el-input
-            v-model.trim="formData.nickname"
+            v-model.trim="formData.nickName"
             size="large"
             clearable
             placeholder="请输入昵称"
@@ -56,7 +59,7 @@
         <el-form-item prop="checkcode">
           <div class="check-code-panel">
             <el-input
-              v-model.trim="formData.checkcode"
+              v-model.trim="formData.checkCode"
               size="large"
               clearable
               show-password
@@ -85,7 +88,13 @@
 
 <script setup>
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import md5 from 'js-md5'
+import { useUserInfoStore } from '@/stores/UserInfoStore'
+import { useRouter } from 'vue-router'
+
 const { proxy } = getCurrentInstance()
+const userInfoStore = useUserInfoStore()
+const router = useRouter()
 
 // 表单数据
 const formData = ref({})
@@ -97,6 +106,8 @@ const errorMS = ref('')
 const isLogin = ref(true)
 // 验证码图片URL
 const checkCodeUrl = ref(null)
+// 是否显示加载中
+const showLoading = ref(false)
 
 /**
  * 切换登录/注册类型
@@ -132,42 +143,7 @@ const changeCheckCode = async () => {
   // 存储验证码key到localStorage
   localStorage.setItem('checkCodeKey', result.data.checkCodeKey)
 }
-
-/**
- * 提交表单
- */
-const submit = () => {
-  // formDataRef.value.validate(async (valid) => {
-  //   if (valid) {
-  //     window.electron.ipcRenderer.send('loginOrRegister', formData.value);
-  //   } else {
-  //     return ;
-  //   }
-  // });
-  clearVerify()
-  if (!checkValue('checkEmail', formData.value.email, '请输入正确的邮箱')) {
-    return
-  }
-
-  if (!isLogin.value && !checkValue('', formData.value.nickname, '请输入昵称')) {
-    return
-  }
-
-  if (
-    !checkValue('checkPassword', formData.value.password, '密码只能是数字、字母、特殊字符8-16位')
-  ) {
-    return
-  }
-
-  if (!isLogin.value && formData.value.password !== formData.value.repassword) {
-    errorMS.value = '两次密码输入不一致'
-    return
-  }
-
-  if (!checkValue('', formData.value.checkcode, '请输入正确的验证码')) {
-    return
-  }
-}
+changeCheckCode()
 
 const checkValue = (type, value, msg) => {
   // 判空
@@ -187,6 +163,99 @@ const checkValue = (type, value, msg) => {
 
 const clearVerify = () => {
   errorMS.value = ''
+}
+
+/**
+ * 提交表单
+ */
+const submit = async () => {
+  // formDataRef.value.validate(async (valid) => {
+  //   if (valid) {
+  //     window.electron.ipcRenderer.send('loginOrRegister', formData.value);
+  //   } else {
+  //     return ;
+  //   }
+  // });
+  clearVerify()
+  if (!checkValue('checkEmail', formData.value.email, '请输入正确的邮箱')) {
+    return
+  }
+
+  if (!isLogin.value && !checkValue('', formData.value.nickName, '请输入昵称')) {
+    return
+  }
+
+  if (
+    !checkValue('checkPassword', formData.value.password, '密码只能是数字、字母、特殊字符8-16位')
+  ) {
+    return
+  }
+
+  if (!isLogin.value && formData.value.password !== formData.value.repassword) {
+    errorMS.value = '两次密码输入不一致'
+    return
+  }
+
+  if (!checkValue('', formData.value.checkCode, '请输入正确的验证码')) {
+    return
+  }
+
+  if (isLogin.value) {
+    showLoading.value = true
+  }
+
+  // 登录或注册请求处理
+  let result = await proxy.Request({
+    url: isLogin.value ? proxy.Api.login : proxy.Api.register, // 根据登录状态选择请求的URL
+    showError: false, // 不显示错误提示
+    showLoading: isLogin.value ? false : true, // 登录时不显示加载提示，注册时显示
+    params: {
+      email: formData.value.email, // 邮箱参数
+      password: isLogin.value ? md5(formData.value.password) : formData.value.password, // 登录时使用MD5加密密码，注册时不加密
+      checkCode: formData.value.checkCode, // 验证码
+      nickName: formData.value.nickName, // 昵称
+      checkCodeKey: localStorage.getItem('checkCodeKey') // 验证码密钥，从localStorage获取
+    },
+    errorCallback: (response) => {
+      // 请求错误回调函数
+      showLoading.value = false // 隐藏加载提示
+      changeCheckCode() // 更换验证码
+      errorMS.value = response.info // 设置错误信息
+    }
+  })
+  // 如果请求没有返回结果，则直接返回
+  if (!result) {
+    return
+  }
+
+  // 如果是登录操作
+  if (isLogin.value) {
+    // 设置用户信息
+    userInfoStore.setUserInfo(result.data)
+    // 保存token到localStorage
+    localStorage.setItem('token', result.data.token)
+    // 跳转到主页面
+    router.push('/main')
+
+    // 获取屏幕宽高
+    const screenWidth = window.screen.width
+    const screenHeight = window.screen.height
+    // 发送IPC消息，打开聊天窗口
+    window.electron.ipcRenderer.send('openChat', {
+      email: formData.value.email, // 用户邮箱
+      token: result.data.token, // 用户token
+      userId: result.data.userId, // 用户ID
+      nickName: result.data.nickName, // 用户昵称
+      admin: result.data.admin, // 用户是否为管理员
+      screenHeight, // 屏幕高度
+      screenWidth // 屏幕宽度
+    })
+  } else {
+    // 注册成功提示
+    proxy.Message.success('注册成功，请登录')
+    // 切换操作类型（切换到登录）
+    changeOpType()
+  }
 }
 </script>
 
@@ -240,6 +309,7 @@ const clearVerify = () => {
     .error-ms {
       line-height: 30px;
       height: 30px;
+      font-size: 14px;
       color: #f56c6c;
     }
     .check-code-panel {

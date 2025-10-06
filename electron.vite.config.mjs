@@ -39,15 +39,20 @@ export default defineConfig({
     server: {
       hmr: true, // 启用热模块替换
       port: 5000, // 设置开发服务器端口为 5000
-      proxy: { // 配置代理，用于将 API 请求转发到后端服务
+      proxy: {
+        // 配置代理，用于将 API 请求转发到后端服务
         '/api': {
           target: 'http://localhost:5050',
           changeOrigin: true,
-          pathRewrite: { // 路径重写规则
+          pathRewrite: {
+            // 路径重写规则
             '^/api': '/api' // 将 /api 前缀保留
           }
         }
       }
+    },
+    build: {
+      sourcemap: true // 生成源码映射文件
     }
   }
 })
