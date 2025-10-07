@@ -2,7 +2,7 @@
   <div class="login-panel">
     <div class="title drag">{{ isLogin ? '登录' : '注册' }}</div>
     <div v-if="showLoading" class="loading-panel">
-      <img src="../assets/loading.gif" alt="loading" />
+      <img src="../../src/assets/img/loading.gif" alt="loading" />
     </div>
     <div v-else class="login-form">
       <div class="error-ms">{{ errorMS }}</div>
