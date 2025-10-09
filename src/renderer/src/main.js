@@ -12,13 +12,15 @@ import Verify from '@/utils/Verify.js'
 import Request from '@/utils/Request.js'
 import Message from '@/utils/Message.js'
 import Api from '@/utils/Api.js'
+import Layout from './components/Layout.vue'
 
 /**
- * 创建Vue应用实例并进行全局配置
- * 使用ElementPlus UI组件库、路由插件，并挂载到DOM
+ * Vue应用初始化配置文件
+ * 用于创建Vue应用实例并配置全局插件和属性
  */
 const app = createApp(App) // 创建Vue应用实例
 app.use(ElementPlus).use(router).use(createPinia())
+app.component('Layout', Layout)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Request = Request
