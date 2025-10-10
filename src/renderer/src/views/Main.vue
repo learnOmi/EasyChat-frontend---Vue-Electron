@@ -33,11 +33,13 @@
       </router-view>
     </div>
   </div>
+  <WinOp></WinOp>
 </template>
 
 <script setup>
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import WinOp from '../components/WinOp.vue'
 const { proxy } = getCurrentInstance()
 const router = useRouter()
 

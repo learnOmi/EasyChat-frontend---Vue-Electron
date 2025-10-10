@@ -1,14 +1,24 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { onLoginOrRegister, onLoginSuccess } from './ipc'
+import { onLoginOrRegister, onLoginSuccess, winTitleOp } from './ipc'
 
 const login_width = 300
 const login_height = 370
 const register_height = 490
 
+let contextMenu = [
+  {
+    label: '退出',
+    click: () => {
+      app.quit()
+    }
+  }
+]
+
 let mainWindow
+let tray
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -47,6 +57,15 @@ function createWindow() {
   if (is.dev) {
     mainWindow.webContents.openDevTools()
   }
+
+  tray = new Tray(icon)
+  const menu = Menu.buildFromTemplate(contextMenu)
+  tray.setToolTip('EasyChat')
+  tray.setContextMenu(menu)
+  tray.on('click', () => {
+    mainWindow.setSkipTaskbar(false)
+    mainWindow.show()
+  })
 }
 
 // This method will be called when Electron has finished
@@ -80,10 +99,41 @@ app.whenReady().then(() => {
     mainWindow.center()
     mainWindow.setMaximizable(true)
     mainWindow.setMinimumSize(800, 600)
+
+    contextMenu.unshift({
+      label: '用户:' + config.nickName,
+      click: () => {}
+    })
+    tray.setContextMenu(Menu.buildFromTemplate(contextMenu))
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  // 监听窗口标题操作
+  winTitleOp((e, { action, data }) => {
+    const webContents = e.sender
+    const win = BrowserWindow.fromWebContents(webContents)
+    switch (action) {
+      case 'minimize':
+        win.minimize()
+        break
+      case 'maximize':
+        win.maximize()
+        break
+      case 'close':
+        if (data.closeType === 0) {
+          win.close()
+        } else {
+          win.setSkipTaskbar(true)
+          win.hide()
+        }
+        break
+      case 'unmaximize':
+        win.unmaximize()
+        break
+      case 'setTop':
+        win.setAlwaysOnTop(data.isTop)
+        break
+    }
+  })
 
   createWindow()
 

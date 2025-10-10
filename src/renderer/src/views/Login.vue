@@ -84,6 +84,7 @@
       </el-form>
     </div>
   </div>
+  <WinOp :show-set-top="false" :show-min="true" :show-max="false" :close-type="0"></WinOp>
 </template>
 
 <script setup>
@@ -91,6 +92,7 @@ import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 import md5 from 'js-md5'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useRouter } from 'vue-router'
+import WinOp from '../components/WinOp.vue'
 
 const { proxy } = getCurrentInstance()
 const userInfoStore = useUserInfoStore()

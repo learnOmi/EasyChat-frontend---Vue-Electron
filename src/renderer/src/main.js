@@ -13,6 +13,7 @@ import Request from '@/utils/Request.js'
 import Message from '@/utils/Message.js'
 import Api from '@/utils/Api.js'
 import Layout from './components/Layout.vue'
+import WinOp from './components/WinOp.vue'
 
 /**
  * Vue应用初始化配置文件
@@ -21,6 +22,7 @@ import Layout from './components/Layout.vue'
 const app = createApp(App) // 创建Vue应用实例
 app.use(ElementPlus).use(router).use(createPinia())
 app.component('Layout', Layout)
+app.component('WinOp', WinOp)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Request = Request

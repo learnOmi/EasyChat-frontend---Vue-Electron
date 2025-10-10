@@ -13,27 +13,35 @@
       // 工作目录，设置为当前工作区文件夹
       "cwd": "${workspaceFolder}",
       // 运行时可执行文件，使用nodemon来运行Electron主进程
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
+      // "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
+      "runtimeExecutable": "npm",
       // Windows平台特定的运行时可执行文件
       "windows": {
-        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon.cmd"
+        // "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon.cmd"
+        "runtimeExecutable": "npm.cmd"
       },
       // 传递给nodemon的参数
       // 配置运行参数
       "args": [
-        "--exec",           // 指定执行命令
-        "npm run build && ${workspaceFolder}/node_modules/.bin/electron",  // 构建项目并启动Electron
-        "--watch",          // 监视文件变化
-        "src/main",         // 监视src/main目录
-        "--ext",            // 指定监视的文件扩展名
-        "js,ts,json",       // 监视js、ts和json文件
-        "--inspect",        // 启动调试模式
-        "."                 // 当前目录作为工作目录
+        // "--exec",           // 指定执行命令
+        // "npm run build && ${workspaceFolder}/node_modules/.bin/electron",  // 构建项目并启动Electron
+        // "--watch",          // 监视文件变化
+        // "src/main",         // 监视src/main目录
+        // "--ext",            // 指定监视的文件扩展名
+        // "js,ts,json",       // 监视js、ts和json文件
+        // "--inspect",        // 启动调试模式
+        // "."                 // 当前目录作为工作目录
+        "run",
+        "build",
+        "&&",
+         "${workspaceFolder}/node_modules/.bin/electron",
+        "--inspect",
+        "."
       ],
       // 输出捕获设置为标准输出(std)
       "outputCapture": "std",
       // 重启设置为true，表示在每次运行前会重启进程
-      "restart": true,
+      // "restart": true,
       // 控制台设置为集成终端(integratedTerminal)
       "console": "integratedTerminal"
     }

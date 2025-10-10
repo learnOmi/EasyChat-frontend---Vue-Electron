@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 4949726 */
-  src: url('iconfont.woff2?t=1759872135774') format('woff2'),
-       url('iconfont.woff?t=1759872135774') format('woff'),
-       url('iconfont.ttf?t=1759872135774') format('truetype');
+  src: url('iconfont.woff2?t=1760130239682') format('woff2'),
+       url('iconfont.woff?t=1760130239682') format('woff'),
+       url('iconfont.ttf?t=1760130239682') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,82 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-close:before {
+  content: "\e62d";
+}
+
+.icon-top:before {
+  content: "\e681";
+}
+
+.icon-minimize:before {
+  content: "\e66c";
+}
+
+.icon-max:before {
+  content: "\e600";
+}
+
+.icon-maximize:before {
+  content: "\e697";
+}
+
+.icon-icon-tupian:before {
+  content: "\e604";
+}
+
+.icon-a-circle-plus:before {
+  content: "\e989";
+}
+
+.icon-a-link:before {
+  content: "\e98c";
+}
+
+.icon-a-info-filled:before {
+  content: "\e98d";
+}
+
+.icon-a-plus:before {
+  content: "\e98e";
+}
+
+.icon-a-promotion:before {
+  content: "\e990";
+}
+
+.icon-a-star:before {
+  content: "\e991";
+}
+
+.icon-a-folder:before {
+  content: "\e99d";
+}
+
+.icon-a-camera:before {
+  content: "\e99f";
+}
+
+.icon-icon-Call:before {
+  content: "\e606";
+}
+
+.icon-a-icon-MuteOn:before {
+  content: "\e607";
+}
+
+.icon-icon-fenxiang:before {
+  content: "\e608";
+}
+
+.icon-icon-friend-in:before {
+  content: "\e609";
+}
+
+.icon-icon-xiaoxi:before {
+  content: "\e60a";
 }
 
 .icon-a-s-tools:before {
