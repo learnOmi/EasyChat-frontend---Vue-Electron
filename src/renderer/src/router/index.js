@@ -32,12 +32,12 @@ const router = createRouter({
           component: () => import('@/views/contact/Contact.vue'),
           children: [
             {
-              path: '/contact/blank',
+              path: 'blank',
               name: '空白页',
               component: () => import('@/views/contact/BlankPage.vue')
             },
             {
-              path: '/contact/search',
+              path: 'search',
               name: '搜索',
               component: () => import('@/views/contact/Search.vue')
             }

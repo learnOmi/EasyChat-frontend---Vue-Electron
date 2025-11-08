@@ -23,7 +23,7 @@
               v-for="sub in item.children"
               :key="sub.path"
               :class="['part-item', { active: sub.path === route.path }]"
-              @click="partJump(sub.path)"
+              @click="partJump(sub)"
             >
               <div :class="['iconfont', sub.icon]" :style="{ background: sub.iconBgColor }"></div>
               <div class="text">{{ sub.name }}</div>

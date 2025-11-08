@@ -222,7 +222,7 @@ const submit = async () => {
       // 请求错误回调函数
       showLoading.value = false // 隐藏加载提示
       changeCheckCode() // 更换验证码
-      errorMS.value = response.info // 设置错误信息
+      errorMS.value = response.message // 设置错误信息
     }
   })
   // 如果请求没有返回结果，则直接返回

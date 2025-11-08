@@ -16,7 +16,7 @@
         <span class="contact-type">{{ contactTypeName }}</span>
         <div>{{ searchResult.nickName }}</div>
       </div>
-      <div v-if="searchResult.contactId != userInfoStore.getInfo().userId" class="op-btn">
+      <div v-if="searchResult.contactId != userInfoStore.getUserInfo().userId" class="op-btn">
         <el-button
           v-if="
             searchResult.status == null ||
@@ -41,12 +41,12 @@
 
 <script setup>
 import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
-import { useUserInfoStore } from '@/stores/userInfo'
+import { useUserInfoStore } from '@/stores/UserInfoStore'
 const { proxy } = getCurrentInstance()
 const userInfoStore = useUserInfoStore()
 
 const contactTypeName = computed(() => {
-  if (userInfoStore().getInfo().userId == searchResult.value.contactId) {
+  if (userInfoStore.getUserInfo().userId == searchResult.value.contactId) {
     return '自己'
   }
   if (searchResult.value.contactType == 'USER') {
