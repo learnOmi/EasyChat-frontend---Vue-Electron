@@ -14,7 +14,10 @@
     <div v-if="searchResult && Object.keys(searchResult).length > 0" class="search-result-panel">
       <div class="search-result">
         <span class="contact-type">{{ contactTypeName }}</span>
-        <div>{{ searchResult.nickName }}</div>
+        <UserBaseInfo
+          :user-info="searchResult"
+          :show-area="searchResult.contactType == 'USER'"
+        ></UserBaseInfo>
       </div>
       <div v-if="searchResult.contactId != userInfoStore.getUserInfo().userId" class="op-btn">
         <el-button
@@ -37,9 +40,11 @@
     </div>
     <div v-if="!searchResult" class="no-data">暂无数据</div>
   </ContentPanel>
+  <SearchAdd ref="searchAddRef" @reload="resetFrom"></SearchAdd>
 </template>
 
 <script setup>
+import SearchAdd from './SearchAdd.vue'
 import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 const { proxy } = getCurrentInstance()
@@ -76,6 +81,12 @@ const search = async () => {
 
   searchResult.value = result.data
 }
+
+const searchAddRef = ref()
+const applyContact = async () => {
+  searchAddRef.value.show(searchResult.value)
+}
+
 </script>
 
 <style lang="scss" scoped>
