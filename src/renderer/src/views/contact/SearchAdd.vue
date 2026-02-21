@@ -32,6 +32,8 @@ import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 const { proxy } = getCurrentInstance()
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 const userInfoStore = useUserInfoStore()
+import { useContactStateStore } from '@/stores/ContactStateStore'
+const contactStateStore = useContactStateStore()
 
 const formData = ref({})
 const formDataRef = ref()
@@ -67,7 +69,8 @@ const submitApply = async () => {
   if (!result) {
     return
   }
-  if (result.data==0) {
+  if (result.data == 0) {
+    contactStateStore.setContactReload(contactType)
     proxy.Message.success('加入成功')
   } else {
     proxy.Message.success('申请已发送')

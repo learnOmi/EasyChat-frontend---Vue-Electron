@@ -29,6 +29,15 @@
               <div class="text">{{ sub.name }}</div>
             </div>
             <template v-for="contact in item.contactData" :key="contact[item.contactId]">
+              <div
+                :class="
+                  ['part-item', contact[item.contactId]] == route.query.contactId ? 'active' : ''
+                "
+                @click="contactDetail(contact, item)"
+              >
+                <Avatar :user-id="contact[item.contactId]" :width="35" />
+                <div class="text">{{ contact[item.contactName] }}</div>
+              </div>
             </template>
             <template v-if="item.contactData && item.contactData.length == 0">
               <div class="no-data">
@@ -49,11 +58,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 const { proxy } = getCurrentInstance()
 const router = useRouter()
 const route = useRoute()
+import { useContactStateStore } from '@/stores/ContactStateStore'
+const contactStateStore = useContactStateStore()
+
+const searchKey = ref()
+const handleSearch = () => {}
 
 const partList = ref([
   {
@@ -121,6 +135,43 @@ const partJump = (data) => {
   }
   router.push(data.path)
 }
+
+const loadContact = async (contactType) => {
+  let result = await proxy.Request({
+    url: proxy.Api.loadContact,
+    params: {
+      contactType
+    }
+  })
+  if (!result) {
+    return
+  }
+  if (contactType === 'GROUP') {
+    partList.value[2].contactData = result.data
+  } else if (contactType === 'USER') {
+    partList.value[3].contactData = result.data
+  }
+}
+loadContact('USER')
+loadContact('GROUP')
+
+watch(
+  () => contactStateStore.contactReload,
+  (newVal, oldVal) => {
+    if (!newVal) {
+      return
+    }
+    switch (newVal) {
+      case 'GROUP':
+        loadContact('GROUP')
+        break
+      case 'USER':
+        loadContact('USER')
+        break
+    }
+    contactStateStore.setContactReload(null)
+  }
+)
 </script>
 
 <style lang="scss" scoped>

@@ -18,6 +18,7 @@ import ContentPanel from '@/components/ContentPanel.vue'
 import ShowLocalImage from '@/components/ShowLocalImage.vue'
 import UserBaseInfo from '@/components/UserBaseInfo.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
+import Avatar from '@/components/Avatar.vue'
 
 /**
  * Vue应用初始化配置文件
@@ -31,6 +32,7 @@ app.component('ContentPanel', ContentPanel)
 app.component('ShowLocalImage', ShowLocalImage)
 app.component('UserBaseInfo', UserBaseInfo)
 app.component('BaseDialog', BaseDialog)
+app.component('Avatar', Avatar)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Request = Request
