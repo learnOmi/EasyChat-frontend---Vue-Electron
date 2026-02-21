@@ -48,7 +48,7 @@ import AvatarBase from './AvatarBase.vue'
 import UserBaseInfo from './UserBaseInfo.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 const { proxy } = getCurrentInstance()
-import { useUserInfoStore } from '@/sotres/UserInfoStore'
+import { useUserInfoStore } from '@/stores/UserInfoStore'
 const userInfoStore = useUserInfoStore()
 
 const props = defineProps({
