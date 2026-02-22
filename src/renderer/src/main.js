@@ -20,6 +20,7 @@ import UserBaseInfo from '@/components/UserBaseInfo.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import Avatar from '@/components/Avatar.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
+import Confirm from './utils/Confirm'
 
 /**
  * Vue应用初始化配置文件
@@ -40,4 +41,5 @@ app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Request = Request
 app.config.globalProperties.Message = Message
 app.config.globalProperties.Api = Api
+app.config.globalProperties.Confirm = Confirm
 app.mount('#app')
