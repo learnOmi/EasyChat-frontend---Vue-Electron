@@ -90,7 +90,11 @@ const delContactData = () => {
 
 watch(
   () => route.query.contactId,
-  (newVal, oldVal) => { },
+  (newVal, oldVal) => {
+    if (newVal) {
+      loadUserDetail(newVal)
+    }
+  },
   { immediate: true, deep: true }
 )
 </script>

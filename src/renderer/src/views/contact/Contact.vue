@@ -202,6 +202,16 @@ watch(
         router.push('/contact/blank')
         rightTitle.value = null
         break
+      case 'DISSOLUTION_GROUP':
+        loadMyGroup()
+        router.push('/contact/blank')
+        rightTitle.value = null
+        break
+      case 'LEAVE_GROUP':
+        loadContact('GROUP')
+        router.push('/contact/blank')
+        rightTitle.value = null
+        break
     }
   },
   { immediate: true, deep: true }

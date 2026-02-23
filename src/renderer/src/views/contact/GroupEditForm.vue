@@ -81,6 +81,18 @@ const submit = async () => {
     //TODO 重新加载头像
   })
 }
+
+const saveCover = () => {}
+
+const show = (data) => {
+  formDataRef.value.resetFields();
+  formData.value = Object.assign({}, data)
+  formData.value.avatarFile = data.groupId
+}
+
+defineExpose({
+  show
+})
 </script>
 
 <style lang="scss" scoped></style>
