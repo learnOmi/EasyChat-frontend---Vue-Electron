@@ -55,6 +55,11 @@ const router = createRouter({
               path: 'groupDetail',
               name: '群聊详情',
               component: () => import('@/views/contact/GroupDetail.vue')
+            },
+            {
+              path: 'contactNotice',
+              name: '新朋友',
+              component: () => import('@/views/contact/ContactApply.vue')
             }
           ]
         },
