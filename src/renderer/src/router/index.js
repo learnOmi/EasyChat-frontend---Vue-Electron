@@ -66,7 +66,24 @@ const router = createRouter({
         {
           path: '/setting',
           name: '设置',
-          component: () => import('@/views/setting/Setting.vue')
+          component: () => import('@/views/setting/Setting.vue'),
+          children: [
+            {
+              path: 'userInfo',
+              name: '账号设置',
+              component: () => import('@/views/setting/UserInfo.vue')
+            },
+            {
+              path: 'fileManage',
+              name: '文件管理',
+              component: () => import('@/views/setting/FileManage.vue')
+            },
+            {
+              path: 'about',
+              name: '关于',
+              component: () => import('@/views/setting/About.vue')
+            }
+          ]
         }
       ]
     }
