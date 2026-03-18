@@ -88,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
 import md5 from 'js-md5'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useRouter } from 'vue-router'
@@ -259,6 +259,29 @@ const submit = async () => {
     changeOpType()
   }
 }
+
+const init = () => {
+  window.electron.ipcRenderer.send('setLocalStore', {
+    key: 'devWsDomain',
+    value: proxy.Api.devWsDomain
+  })
+  window.electron.ipcRenderer.send('setLocalStore', {
+    key: 'devDomain',
+    value: proxy.Api.devDomain
+  })
+  window.electron.ipcRenderer.send('setLocalStore', {
+    key: 'prodDomain',
+    value: proxy.Api.prodDomain
+  })
+  window.electron.ipcRenderer.send('setLocalStore', {
+    key: 'prodWsDomain',
+    value: proxy.Api.prodWsDomain
+  })
+}
+
+onMounted(() => {
+  init()
+})
 </script>
 
 <style lang="scss" scoped>

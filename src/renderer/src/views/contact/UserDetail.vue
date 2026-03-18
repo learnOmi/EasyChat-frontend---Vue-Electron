@@ -33,8 +33,8 @@ const { proxy } = getCurrentInstance()
 import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
-import { userContactStateStore } from '@/store/contactState'
-const contactStateStore = userContactStateStore()
+import { useContactStateStore } from '@/stores/contactStateStore'
+const contactStateStore = useContactStateStore()
 
 const userInfo = ref({})
 const loadUserDetail = async (contactId) => {

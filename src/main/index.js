@@ -2,7 +2,13 @@ import { app, shell, BrowserWindow, Tray, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { onLoginOrRegister, onLoginSuccess, winTitleOp } from './ipc'
+import {
+  onGetLocalStore,
+  onLoginOrRegister,
+  onLoginSuccess,
+  onSetLocalStore,
+  winTitleOp
+} from './ipc'
 
 const login_width = 300
 const login_height = 370
@@ -136,6 +142,9 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+
+  onSetLocalStore()
+  onGetLocalStore()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

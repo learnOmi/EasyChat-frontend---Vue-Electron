@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 import store from './store'
+import { initWs } from './wsClient'
+
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
   ipcMain.on('loginOrRegister', (e, isLogin) => {
@@ -11,8 +13,9 @@ const onLoginSuccess = (callback) => {
   ipcMain.on('openChat', (e, config) => {
     store.initUserId(config.userId)
     store.setUserData('token', config.token)
-
+    // TODO 增加用户配置
     callback(config)
+    initWs(config, e.sender)
   })
 }
 
@@ -22,4 +25,16 @@ const winTitleOp = (callback) => {
   })
 }
 
-export { onLoginOrRegister, onLoginSuccess, winTitleOp }
+const onSetLocalStore = () => {
+  ipcMain.on('setLocalStore', (e, { key, value }) => {
+    store.setData(key, value)
+  })
+}
+
+const onGetLocalStore = () => {
+  ipcMain.on('getLocalStore', (e, key) => {
+    e.sender.send('getLocalStoreCallback', store.getData(key))
+  })
+}
+
+export { onLoginOrRegister, onLoginSuccess, winTitleOp, onGetLocalStore, onSetLocalStore }

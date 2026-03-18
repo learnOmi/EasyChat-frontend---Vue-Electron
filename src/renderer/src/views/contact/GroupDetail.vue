@@ -56,9 +56,9 @@ const { proxy } = getCurrentInstance()
 import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
-import { useUserInfoStore } from '@/stores/userInfo'
+import { useUserInfoStore } from '@/stores/userInfoStore'
 const userInfoStore = useUserInfoStore()
-import { useContactStateStore } from '@/stores/contact'
+import { useContactStateStore } from '@/stores/contactStateStore'
 import GroupEditDialog from './GroupEditDialog.vue'
 const contactStateStore = useContactStateStore()
 
