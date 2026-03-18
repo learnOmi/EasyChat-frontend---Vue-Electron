@@ -2,7 +2,7 @@
   <ContentPanel>
     <div v-if="showType == 0" class="show-info">
       <div class="user-info">
-        <UserbaseInfo :user-info="userInfo"></UserbaseInfo>
+        <UserBaseInfo :user-info="userInfo"></UserBaseInfo>
         <div class="more-op">
           <el-dropdown placement="bottom-end" trigger="click">
             <span class="el-dropdown-link">
@@ -27,17 +27,22 @@
         <div class="part-title">个性签名</div>
         <div class="part-content">{{ userInfo.personalSignature }}</div>
       </div>
+      <div class="logout">
+        <el-button @click="logout">退出登录</el-button>
+      </div>
     </div>
-    <div class="logout">
-      <el-button @click="logout">退出登录</el-button>
+    <div v-if="showType == 1">
+      <UserInfoEdit :data="userInfo" @edit-back="editBack"></UserInfoEdit>
+    </div>
+    <div v-if="showType == 2">
+      <UserInfoPassword @edit-back="editBack"></UserInfoPassword>
     </div>
   </ContentPanel>
-  <div v-if="showType == 1">
-    <UserInfoEdit :data="userInfo" @edit-back="editBack"></UserInfoEdit>
-  </div>
 </template>
 
 <script setup>
+import UserInfoEdit from './UserInfoEdit.vue'
+import UserInfoPassword from './UserInfoPassword.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 const { proxy } = getCurrentInstance()
 
@@ -92,6 +97,7 @@ const logout = () => {}
       width: 60px;
       color: #9e9e9e;
     }
+    font-size: 15px;
     .part-content {
       flex: 1;
       margin-left: 15px;

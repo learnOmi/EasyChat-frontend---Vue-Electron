@@ -1,7 +1,7 @@
 <template>
   <div
     class="user-avatar"
-    :style="{ width: `${width}px`, height: `${width}px`, borderRadius: `${boderRadius}px` }"
+    :style="{ width: `${width}px`, height: `${width}px`, borderRadius: `${borderRadius}px` }"
     @click="showDetailHandler"
   >
     <ShowLocalImage

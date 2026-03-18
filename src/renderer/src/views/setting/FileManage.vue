@@ -1,5 +1,7 @@
 <template>
-  <div>文件管理</div>
+  <ContentPanel>
+  
+  </ContentPanel>
 </template>
 
 <script setup>

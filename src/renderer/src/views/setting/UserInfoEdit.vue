@@ -31,8 +31,8 @@
           clearable
           placeholder="请输入个性签名"
           maxlength="30"
-          rows="5"
-          show-word-limit="true"
+          :rows="5"
+          :show-word-limit="true"
           type="textarea"
           resize="none"
         ></el-input>
@@ -49,7 +49,7 @@
 import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
 const { proxy } = getCurrentInstance()
 import AreaSelect from '@/components/AreaSelect.vue'
-import { useUserInfoStore } from '@/store/userInfo'
+import { useUserInfoStore } from '@/stores/userInfoStore'
 const userInfoStore = useUserInfoStore()
 
 const props = defineProps({
