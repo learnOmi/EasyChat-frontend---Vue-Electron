@@ -1,5 +1,8 @@
 import WebSocket from 'ws'
 import store from './store'
+import { saveOrUpdateChatSessionBatch4Init } from './db/ChatSessionUserModel'
+import { saveMessageBatch } from './db/ChatMessageModel'
+import { updateContactNoReadCount } from './db/UserSettingModel'
 const NODE_ENV = process.env.NODE_ENV
 
 let ws = null
@@ -29,8 +32,24 @@ const createWs = () => {
     maxReConnectTimes = 5
   }
 
-  ws.onmessage = (e) => {
+  ws.onmessage = async (e) => {
     console.log('收到服务器消息', e.data)
+    const message = JSON.parse(e.data)
+    const messageType = message.messageType
+    switch (messageType) {
+      // ws连接成功
+      case 0:
+        // 保存会话信息
+        await saveOrUpdateChatSessionBatch4Init(message.extendData.chatSessionList)
+        // 保存消息
+        await saveMessageBatch(message.extendData.chatMessageList)
+        // 更新联系人申请数
+        await updateContactNoReadCount({
+          userId: store.getUserId(),
+          noReadCount: message.extendData.applyCount
+        })
+        break
+    }
   }
 
   ws.onclose = () => {

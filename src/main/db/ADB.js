@@ -143,6 +143,7 @@ const queryOne = (sql, params) => {
     stmt.get(params, function (err, row) {
       if (err) resolve({})
       resolve(convertDbObj2BizObj(row))
+      console.log(`执行的sql:${sql}, params:${params}, row:${JSON.stringify(row)}`)
     })
     stmt.finalize()
   })
@@ -219,11 +220,9 @@ const update = (tableName, data, paramData) => {
 const run = (sql, params) => {
   return new Promise((resolve, reject) => {
     const stmt = db.prepare(sql)
-    stmt.run(params, function (err, row) {
+    stmt.run(params, function (err) {
       if (err) resolve('操作数据库失败！')
-      row.forEach((item, index) => {
-        row[index] = convertDbObj2BizObj(item)
-      })
+      console.log(`执行的sql:${sql}, params:${params}, 执行记录数:${this.changes}`)
       resolve(this.changes)
     })
     stmt.finalize
