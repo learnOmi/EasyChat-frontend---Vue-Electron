@@ -1,5 +1,8 @@
-import { run } from './ADB'
+import { insertOrIgnore, queryOne, run, update } from './ADB'
 import store from '../store'
+const os = require('os')
+
+const userDir = os.homedir()
 
 const updateContactNoReadCount = async ({ userId, noReadCount }) => {
   let sql = null
@@ -15,4 +18,40 @@ const updateContactNoReadCount = async ({ userId, noReadCount }) => {
   await run(sql, [noReadCount, userId])
 }
 
-export { updateContactNoReadCount }
+const addUserSetting = async (userId, email) => {
+  let sql = 'select max(server_port) server_port from user_setting'
+  let serverPort = await queryOne(sql, [])
+  if (!serverPort) {
+    serverPort = 10240
+  } else {
+    serverPort++
+  }
+
+  const sysSetting = {
+    localFileFolder: userDir + '\\.easychat\\fileStorage\\'
+  }
+
+  let resultServerPort = null
+  let localFileFolder = sysSetting.localFileFolder + userId
+  sql = 'select * from user_setting where user_id = ?'
+  const userInfo = await queryOne(sql, [userId])
+  if (userInfo) {
+    await update('sys_setting', { email: email }, { userId: userId })
+    resultServerPort = userInfo.serverPort
+    localFileFolder = JSON.parse(userInfo.sysSetting).localFileFolder + userId
+  } else {
+    await insertOrIgnore('user_setting', {
+      userId: userId,
+      email: email,
+      sysSetting: JSON.stringify(sysSetting),
+      contactNoRead: 0,
+      serverPort: serverPort
+    })
+    resultServerPort = serverPort
+  }
+  // TODO 启动本地服务
+  store.setUserData('localServerPort', resultServerPort)
+  store.setUserData('localFileFolder', localFileFolder)
+}
+
+export { updateContactNoReadCount, addUserSetting }

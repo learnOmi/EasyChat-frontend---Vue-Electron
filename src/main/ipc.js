@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import store from './store'
 import { initWs } from './wsClient'
+import { addUserSetting } from './db/UserSettingModel'
 
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
@@ -13,7 +14,7 @@ const onLoginSuccess = (callback) => {
   ipcMain.on('openChat', (e, config) => {
     store.initUserId(config.userId)
     store.setUserData('token', config.token)
-    // TODO 增加用户配置
+    addUserSetting(config.userId, config.email)
     callback(config)
     initWs(config, e.sender)
   })
