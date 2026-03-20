@@ -10,7 +10,8 @@ import {
   winTitleOp,
   onLoadSessionData,
   onDelChatSession,
-  onTopChatSession
+  onTopChatSession,
+  onLoadChatMessage
 } from './ipc'
 
 const login_width = 300
@@ -151,6 +152,7 @@ app.whenReady().then(() => {
   onLoadSessionData()
   onDelChatSession()
   onTopChatSession()
+  onLoadChatMessage()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

@@ -3,6 +3,7 @@ import store from './store'
 import { initWs } from './wsClient'
 import { addUserSetting } from './db/UserSettingModel'
 import { selectUserSessionList, delChatSession, topChatSession } from './db/ChatSessionUserModel'
+import { selectMessageList } from './db/ChatMessageModel'
 
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
@@ -58,6 +59,13 @@ const onTopChatSession = () => {
   })
 }
 
+const onLoadChatMessage = () => {
+  ipcMain.on('loadChatMessage', async (e, data) => {
+    const result = await selectMessageList(data)
+    e.sender.send('loadChatMessageCallback', result)
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -65,5 +73,7 @@ export {
   onGetLocalStore,
   onSetLocalStore,
   onLoadSessionData,
-  onDelChatSession
+  onDelChatSession,
+  onLoadChatMessage,
+  onTopChatSession
 }

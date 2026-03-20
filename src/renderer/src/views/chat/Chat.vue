@@ -17,7 +17,11 @@
       </div>
       <div class="chat-session-list">
         <template v-for="item in chatSessionList" :key="item.contactId">
-          <ChatSession :data="item" @contextmenu.stop="onContextmenu(item, $event)"></ChatSession>
+          <ChatSession
+            :data="item"
+            @click="chatSessionClickHandler(item)"
+            @contextmenu.stop="onContextmenu(item, $event)"
+          ></ChatSession>
         </template>
       </div>
     </template>
@@ -35,6 +39,13 @@ const searchKey = ref()
 const search = () => {}
 const chatSessionList = ref([])
 const currentChatSession = ref({})
+const messageList = ref([])
+const messageCountInfo = {
+  totalPage: 0,
+  pageNo: 0,
+  maxMessageId: null,
+  noData: false
+}
 
 const onReceiveMessage = () => {
   window.electron.ipcRenderer.on('receiveMessage', (e, message) => {})
@@ -49,6 +60,28 @@ const onLoadSessionData = () => {
     sortChatSessionList(dataList)
     chatSessionList.value = dataList
   })
+}
+
+const onLoadChatMessage = () => {
+  window.electron.ipcRenderer.on(
+    'loadChatMessageCallback',
+    (e, { dataList, pageTotal, pageNo }) => {
+      if (pageNo == pageTotal) {
+        messageCountInfo.noData = true
+      }
+      dataList.sort((a, b) => {
+        return a.messageId - b.messageId
+      })
+      messageList.value = dataList.concat(messageList.value)
+      messageCountInfo.pageNo = pageNo
+      messageCountInfo.totalPage = pageTotal
+      if (pageNo == 1) {
+        messageCountInfo.maxMessageId =
+          dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
+        // TODO 滚动条滚动到最底部
+      }
+    }
+  )
 }
 
 // 会话列表排序
@@ -111,16 +144,38 @@ const delChatSession = (contactId) => {
   window.ipcRenderer.send('delChatSession', contactId)
 }
 
+// 点击打开会话
+const chatSessionClickHandler = (item) => {
+  currentChatSession.value = Object.assign({}, item)
+  //TODO 清空未读消息记录数
+  messageList.value = []
+  loadChatMessage()
+}
+
+const loadChatMessage = () => {
+  if (messageCountInfo.noData) {
+    return
+  }
+  messageCountInfo.pageNo++
+  window.electron.ipcRenderer.send('loadChatMessage', {
+    sessionId: currentChatSession.value.sessionId,
+    pageNo: messageCountInfo.pageNo,
+    maxMessageId: messageCountInfo.maxMessageId
+  })
+}
+
 onMounted(() => {
   onReceiveMessage()
   onLoadSessionData()
   // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
   loadChatSession()
+  onLoadChatMessage()
 })
 
 onUnmounted(() => {
   window.electron.ipcRenderer.removeAllListeners('receiveMessage')
   window.electron.ipcRenderer.removeAllListeners('loadSessionDataCallback')
+  window.electron.ipcRenderer.removeAllListeners('loadChatMessageCallback')
 })
 </script>
 
