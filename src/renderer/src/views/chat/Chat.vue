@@ -26,7 +26,7 @@
 
 <script setup>
 import ChatSession from './ChatSession.vue'
-import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 const { proxy } = getCurrentInstance()
@@ -34,6 +34,7 @@ const { proxy } = getCurrentInstance()
 const searchKey = ref()
 const search = () => {}
 const chatSessionList = ref([])
+const currentChatSession = ref({})
 
 const onReceiveMessage = () => {
   window.electron.ipcRenderer.on('receiveMessage', (e, message) => {})
@@ -45,16 +46,30 @@ const loadChatSession = () => {
 
 const onLoadSessionData = () => {
   window.electron.ipcRenderer.on('loadSessionDataCallback', (e, dataList) => {
+    sortChatSessionList(dataList)
     chatSessionList.value = dataList
   })
 }
 
-onMounted(() => {
-  onReceiveMessage()
-  onLoadSessionData()
-  // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
-  loadChatSession()
-})
+// 会话列表排序
+const sortChatSessionList = (dataList) => {
+  dataList.sort((a, b) => {
+    const topTypeResult = b['topType'] - a['topType']
+    if (topTypeResult != 0) {
+      return topTypeResult
+    }
+    const timeResult = b['lastReceiveTime'] - a['lastReceiveTime']
+    if (timeResult != 0) {
+      return timeResult
+    }
+    return b['contactId'] - a['contactId']
+  })
+}
+
+// 从会话列表删除
+const delChatSessionList = (contactId) => {
+  chatSessionList.value = chatSessionList.value.filter((item) => item.contactId != contactId)
+}
 
 // 右键
 const onContextmenu = (data, e) => {
@@ -85,14 +100,28 @@ const onContextmenu = (data, e) => {
 
 const setTop = (data) => {
   data.topType = data.topType == 0 ? 1 : 0
-  // TODO 会话排序
+  sortChatSessionList(chatSessionList.value)
   window.ipcRenderer.send('topChatSession', { contactId: data.contactId, topType: data.topType })
 }
 
 const delChatSession = (contactId) => {
-  // TODO 从当前列表删除
-  window.ipcRenderer.sende('delChatSession', contactId)
+  delChatSessionList(contactId)
+  currentChatSession.value = {}
+  // TODO 设置选中的会话
+  window.ipcRenderer.send('delChatSession', contactId)
 }
+
+onMounted(() => {
+  onReceiveMessage()
+  onLoadSessionData()
+  // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
+  loadChatSession()
+})
+
+onUnmounted(() => {
+  window.electron.ipcRenderer.removeAllListeners('receiveMessage')
+  window.electron.ipcRenderer.removeAllListeners('loadSessionDataCallback')
+})
 </script>
 
 <style lang="scss" scoped>
