@@ -20,14 +20,40 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick } from "vue"
+import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
 const { proxy } = getCurrentInstance()
+
+const searchKey = ref()
+const search = () => {}
+const chatSessionList = ref([])
+
+const onReceiveMessage = () => {
+  window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
+  })
+}
+
+const loadChatSession = () => {
+  window.electron.ipcRenderer.send('loadSessionData')
+}
+
+const onLoadSessionData = () => {
+  window.electron.ipcRenderer.on('loadSessionDataCallback', (e, dataList) => {
+    chatSessionList.value = dataList
+  })
+}
+
+onMounted(() => {
+  onReceiveMessage()
+  onLoadSessionData()
+  // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
+  loadChatSession()
+})
 </script>
 
 <style lang="scss" scoped>
 .drag-panel {
-  height:25px;
-  background:#f7f7f7;
+  height: 25px;
+  background: #f7f7f7;
 }
 .top-search {
   padding: 0px 10px 9px 10px;

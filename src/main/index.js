@@ -7,7 +7,8 @@ import {
   onLoginOrRegister,
   onLoginSuccess,
   onSetLocalStore,
-  winTitleOp
+  winTitleOp,
+  onLoadSessionData
 } from './ipc'
 
 const login_width = 300
@@ -145,6 +146,7 @@ app.whenReady().then(() => {
 
   onSetLocalStore()
   onGetLocalStore()
+  onLoadSessionData()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

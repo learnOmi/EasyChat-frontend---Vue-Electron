@@ -48,6 +48,7 @@ const createWs = () => {
           userId: store.getUserId(),
           noReadCount: message.extendData.applyCount
         })
+        sender.send('receiveMessage', { messageType: message.messageType })
         break
     }
   }

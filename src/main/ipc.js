@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import store from './store'
 import { initWs } from './wsClient'
 import { addUserSetting } from './db/UserSettingModel'
+import { selectUserSessionList } from './db/ChatSessionUserModel'
 
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
@@ -35,6 +36,13 @@ const onSetLocalStore = () => {
 const onGetLocalStore = () => {
   ipcMain.on('getLocalStore', (e, key) => {
     e.sender.send('getLocalStoreCallback', store.getData(key))
+  })
+}
+
+const onLoadSessionData = () => {
+  ipcMain.on('loadSessionData', async (e) => {
+    const dataList = await selectUserSessionList()
+    e.sender.send('loadSessionDataCallback', dataList)
   })
 }
 
