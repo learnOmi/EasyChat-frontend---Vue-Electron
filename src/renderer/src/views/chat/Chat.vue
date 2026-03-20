@@ -15,12 +15,20 @@
           </template>
         </el-input>
       </div>
+      <div class="chat-session-list">
+        <template v-for="item in chatSessionList" :key="item.contactId">
+          <ChatSession :data="item" @contextmenu.stop="onContextmenu(item, $event)"></ChatSession>
+        </template>
+      </div>
     </template>
   </Layout>
 </template>
 
 <script setup>
+import ChatSession from './ChatSession.vue'
 import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
+import ContextMenu from '@imengyu/vue3-context-menu'
+import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 const { proxy } = getCurrentInstance()
 
 const searchKey = ref()
@@ -28,8 +36,7 @@ const search = () => {}
 const chatSessionList = ref([])
 
 const onReceiveMessage = () => {
-  window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
-  })
+  window.electron.ipcRenderer.on('receiveMessage', (e, message) => {})
 }
 
 const loadChatSession = () => {
@@ -48,6 +55,44 @@ onMounted(() => {
   // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
   loadChatSession()
 })
+
+// 右键
+const onContextmenu = (data, e) => {
+  ContextMenu.showContextMenu({
+    x: e.x,
+    y: e.y,
+    items: [
+      {
+        label: data.topType == 0 ? '置顶' : '取消置顶',
+        onClick: () => {
+          setTop(data)
+        }
+      },
+      {
+        label: '删除聊天',
+        onClick: () => {
+          proxy.Confirm({
+            message: `确定删除与【${data.contactName}】聊天记录？`,
+            okfun: () => {
+              delChatSession(data.contactId)
+            }
+          })
+        }
+      }
+    ]
+  })
+}
+
+const setTop = (data) => {
+  data.topType = data.topType == 0 ? 1 : 0
+  // TODO 会话排序
+  window.ipcRenderer.send('topChatSession', { contactId: data.contactId, topType: data.topType })
+}
+
+const delChatSession = (contactId) => {
+  // TODO 从当前列表删除
+  window.ipcRenderer.sende('delChatSession', contactId)
+}
 </script>
 
 <style lang="scss" scoped>

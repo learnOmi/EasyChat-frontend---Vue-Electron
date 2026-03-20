@@ -51,4 +51,32 @@ const selectUserSessionList = () => {
   return queryAll(sql, [store.getUserId()])
 }
 
-export { saveOrUpdateChatSessionBatch4Init, updateNoReadCount, selectUserSessionList }
+const delChatSession = (contactId) => {
+  const paramData = {
+    userId: store.getUserId(),
+    contactId: contactId
+  }
+  const sessionInfo = {
+    status: 0
+  }
+  return update('chat_session_user', sessionInfo, paramData)
+}
+
+const topChatSession = (contactId, topType) => {
+  const paramData = {
+    userId: store.getUserId(),
+    contactId: contactId
+  }
+  const sessionInfo = {
+    topType: topType
+  }
+  return update('chat_session_user', sessionInfo, paramData)
+}
+
+export {
+  saveOrUpdateChatSessionBatch4Init,
+  updateNoReadCount,
+  selectUserSessionList,
+  delChatSession,
+  topChatSession
+}

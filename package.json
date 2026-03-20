@@ -20,7 +20,9 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@imengyu/vue3-context-menu": "github:imengyu/vue3-context-menu",
     "axios": "^1.12.2",
+    "dompurify": "^3.3.3",
     "electron-store": "^11.0.2",
     "element-plus": "^2.11.2",
     "js-md5": "^0.8.3",
