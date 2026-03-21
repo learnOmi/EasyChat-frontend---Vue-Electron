@@ -2,8 +2,14 @@ import { ipcMain } from 'electron'
 import store from './store'
 import { initWs } from './wsClient'
 import { addUserSetting } from './db/UserSettingModel'
-import { selectUserSessionList, delChatSession, topChatSession } from './db/ChatSessionUserModel'
-import { selectMessageList } from './db/ChatMessageModel'
+import {
+  selectUserSessionList,
+  delChatSession,
+  topChatSession,
+  updateSessionInfo4Message,
+  readAll
+} from './db/ChatSessionUserModel'
+import { saveMessage, selectMessageList } from './db/ChatMessageModel'
 
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
@@ -66,6 +72,29 @@ const onLoadChatMessage = () => {
   })
 }
 
+const onSetSessionSelected = () => {
+  ipcMain.on('setSessionSelected', (e, { contactId, sessionId }) => {
+    if (sessionId) {
+      store.setUserData('currentSessionId', sessionId)
+      readAll(contactId)
+    } else {
+      store.deleteUserData('currentSessionId')
+    }
+  })
+}
+
+const onAddLocalMessage = () => {
+  ipcMain.on('addLocalMessage', async (e, data) => {
+    await saveMessage(data)
+    // TODO 保存文件
+    // 更新session
+    data.lastReceiveTime = data.sendTime
+    // TODO 更新会话
+    updateSessionInfo4Message(store.getUserData('currentSessionId'), data)
+    e.sender.send('addLocalCallback', { status: 1, messageId: data.messageId })
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -75,5 +104,7 @@ export {
   onLoadSessionData,
   onDelChatSession,
   onLoadChatMessage,
-  onTopChatSession
+  onTopChatSession,
+  onAddLocalMessage,
+  onSetSessionSelected
 }

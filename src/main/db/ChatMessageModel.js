@@ -62,4 +62,4 @@ const getPageOffset = (pageNo, totalCount) => {
   }
 }
 
-export { saveMessageBatch, selectMessageList }
+export { saveMessage, saveMessageBatch, selectMessageList }

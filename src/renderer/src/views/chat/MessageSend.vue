@@ -85,17 +85,113 @@
         </template>
       </el-popover>
     </div>
+    <SearchAdd ref="searchAddRef" />
   </div>
 </template>
 
 <script setup>
 import emojiList from '../../utils/Emoji'
+import SearchAdd from '@/views/contact/SearchAdd.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { userUserInfoStore } from '@/stores/UserInfoStore'
+const userInfoStore = userUserInfoStore()
 const { proxy } = getCurrentInstance()
+
+const props = defineProps({
+  currentChatSession: {
+    type: Object,
+    default: () => {}
+  }
+})
 
 const activeEmoji = ref('表情与情感')
 const msgContent = ref('')
-const sendMessage = () => {}
+const showSendMsgPopover = ref(false)
+const showEmojiPopover = ref(false)
+const emit = defineEmits(['sendMessage4Local'])
+
+const hidePopover = () => {
+  showSendMsgPopover.value = false
+  showEmojiPopover.value = false
+}
+
+const sendMessage = (e) => {
+  if (e.shiftKey && e.keycode === 13) {
+    return
+  }
+  e.preventDefault()
+
+  const messageContent = msgContent.value ? msgContent.value.replace(/\s*$/, '') : ''
+  if (messageContent == '') {
+    showSendMsgPopover.value = true
+    return
+  }
+  sendMessageDo(
+    {
+      messageContent,
+      messageType: 2
+    },
+    true
+  )
+}
+
+const sendMessageDo = async (messageObj, cleanMsgContent) => {
+  const { messageContent, messageType, localFilePath, fileSize, fileName, filePath, fileType } =
+    messageObj
+  //TODO 判断文件大小
+  if (fileSize !== undefined && fileSize !== null && fileSize == 0) {
+    proxy.Confirm({
+      message: `${fileName}是一个空文件！`,
+      showCancelBtn: false
+    })
+    return
+  }
+  messageObj.sessionId = props.currentChatSession.sessionId
+  messageObj.sendUserId = userInfoStore.getUserInfo().sendUserId
+
+  let result = await proxy.Request({
+    url: proxy.Api.sendMessage,
+    showLoading: false,
+    params: {
+      messageContent,
+      contactId: props.currentChatSession.contactId,
+      messageType,
+      fileSize,
+      fileName,
+      fileType
+    },
+    showError: false,
+    errorCallback: (responseData) => {
+      proxy.Confirm({
+        message: responseData.info,
+        okfun: () => {
+          addContact(props.currentChatSession.contactId, responseData.code)
+        },
+        okText: '重新申请'
+      })
+    }
+  })
+  if (!result) {
+    return
+  }
+  if (cleanMsgContent) {
+    msgContent.value = ''
+  }
+  Object.assign(messageObj, result.data)
+  emit('sendMessage4Local', messageObj)
+
+  // 保存消息到本地
+  window.electron.ipcRenderer.send('addLocalMessage', messageObj)
+}
+
+// 添加好友
+const searchAddRef = ref()
+const addContact = async (contactId, code) => {
+  searchAddRef.value.show({
+    contactId,
+    contactType: code == 902 ? 'USER' : 'GROUP'
+  })
+}
 </script>
 
 <style lang="scss" scoped>

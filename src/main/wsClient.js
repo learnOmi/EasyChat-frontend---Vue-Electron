@@ -1,7 +1,11 @@
 import WebSocket from 'ws'
 import store from './store'
-import { saveOrUpdateChatSessionBatch4Init } from './db/ChatSessionUserModel'
-import { saveMessageBatch } from './db/ChatMessageModel'
+import {
+  saveOrUpdateChatSessionBatch4Init,
+  saveOrUpdate4Message,
+  selectUserSessionByContactId
+} from './db/ChatSessionUserModel'
+import { saveMessageBatch, saveMessage } from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
 const NODE_ENV = process.env.NODE_ENV
 
@@ -36,6 +40,9 @@ const createWs = () => {
     console.log('收到服务器消息', e.data)
     const message = JSON.parse(e.data)
     const messageType = message.messageType
+    const sessionInfo = {}
+    let dbSessionInfo = {}
+
     switch (messageType) {
       // ws连接成功
       case 0:
@@ -49,6 +56,26 @@ const createWs = () => {
           noReadCount: message.extendData.applyCount
         })
         sender.send('receiveMessage', { messageType: message.messageType })
+        break
+
+      case 2:
+        if (message.sendUserId == store.getUserId() && message.contactType == 1) {
+          break
+        }
+        if (message.extendData && typeof message.extendData === 'object') {
+          Object.assign(sessionInfo, message.extendData)
+        } else {
+          Object.assign(sessionInfo, message)
+          if (message.contactType == 0 && message.messageType != 1) {
+            sessionInfo.contactName = message.sendUserNickName
+          }
+          sessionInfo.lastReceiveTime = message.sendTime
+        }
+        await saveOrUpdate4Message(store.getUserData('currentSessionId'), sessionInfo)
+        await saveMessage(message)
+        dbSessionInfo = await selectUserSessionByContactId(message.contactId)
+        message.extendData = dbSessionInfo
+        sender.send('receiveMessage', message)
         break
     }
   }

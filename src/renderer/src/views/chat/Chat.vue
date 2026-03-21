@@ -19,6 +19,7 @@
         <template v-for="item in chatSessionList" :key="item.contactId">
           <ChatSession
             :data="item"
+            :current-session="item.contactId == currentChatSession.contactId"
             @click="chatSessionClickHandler(item)"
             @contextmenu.stop="onContextmenu(item, $event)"
           ></ChatSession>
@@ -47,10 +48,17 @@
             :key="data.messageId"
             class="message-item"
           >
-            {{ data.messageContent }}
+            <template
+              v-if="data.messageType == 1 || data.messageType == 2 || data.messageType == 5"
+            >
+              <ChatMessage :data="data" :current-chat-session="currentChatSession"></ChatMessage>
+            </template>
           </div>
         </div>
-        <MessageSend :current-chat-session="currentChatSession"></MessageSend>
+        <MessageSend
+          :current-chat-session="currentChatSession"
+          @send-message4-local="sendMessage4LocalHandler"
+        ></MessageSend>
       </div>
     </template>
   </Layout>
@@ -59,6 +67,7 @@
 <script setup>
 import ChatSession from './ChatSession.vue'
 import MessageSend from './MessageSend.vue'
+import ChatMessage from './ChatMessage.vue'
 import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
@@ -77,7 +86,23 @@ const messageCountInfo = {
 }
 
 const onReceiveMessage = () => {
-  window.electron.ipcRenderer.on('receiveMessage', (e, message) => {})
+  window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
+    let curSession = chatSessionList.value.find((item) => item.sessionId == message.sessionId)
+    if (curSession == null) {
+      chatSessionList.value.push(message.extendData)
+    } else {
+      Object.assign(curSession, message.extendData)
+    }
+    sortChatSessionList(chatSessionList.value)
+
+    if (message.sessionId != currentChatSession.value.sessionId) {
+      // TODO 会话需展示未读消息气泡
+    } else {
+      Object.assign(currentChatSession.value, message.extendData)
+      messageList.value.push(message)
+      gotoBottom()
+    }
+  })
 }
 
 const loadChatSession = () => {
@@ -107,7 +132,7 @@ const onLoadChatMessage = () => {
       if (pageNo == 1) {
         messageCountInfo.maxMessageId =
           dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
-        // TODO 滚动条滚动到最底部
+        gotoBottom()
       }
     }
   )
@@ -185,6 +210,8 @@ const chatSessionClickHandler = (item) => {
   messageCountInfo.totalPage = 1
 
   loadChatMessage()
+  // 设置选中session
+  setSessionSelected({ contactId: item.contactId, sessionId: item.sessionId })
 }
 
 const loadChatMessage = () => {
@@ -196,6 +223,35 @@ const loadChatMessage = () => {
     sessionId: currentChatSession.value.sessionId,
     pageNo: messageCountInfo.pageNo,
     maxMessageId: messageCountInfo.maxMessageId
+  })
+}
+
+const setSessionSelected = ({ contactId, sessionId }) => {
+  window.electron.ipcRenderer.send('setSessionSelected', { contactId, sessionId })
+}
+
+const sendMessage4LocalHandler = (messageObj) => {
+  messageList.value.push(messageObj)
+  const chatSession = chatSessionList.value.find((item) => item.sessionId == messageObj.sessionId)
+  if (chatSession) {
+    chatSession.lastReceiveTime = messageObj.sendTime
+    chatSession.lastMessage = messageObj.lastMessage
+  }
+  sortChatSessionList(chatSessionList.value)
+  gotoBottom()
+}
+
+// 滚动到底部
+const gotoBottom = () => {
+  // 使用nextTick确保DOM更新后执行
+  nextTick(() => {
+    const items = document.querySelectorAll('.message-item')
+    if (items.length > 0) {
+      // 使用setTimeout确保浏览器已经渲染完成
+      setTimeout(() => {
+        items[items.length - 1].scrollIntoView()
+      })
+    }
   })
 }
 
