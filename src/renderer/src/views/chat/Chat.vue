@@ -60,11 +60,15 @@
           @send-message4-local="sendMessage4LocalHandler"
         ></MessageSend>
       </div>
+      <div v-show="Object.keys(currentChatSession).length == 0" class="chat-blank">
+        <Blank></Blank>
+      </div>
     </template>
   </Layout>
 </template>
 
 <script setup>
+import Blank from '@/components/Blank.vue'
 import ChatSession from './ChatSession.vue'
 import MessageSend from './MessageSend.vue'
 import ChatMessage from './ChatMessage.vue'
@@ -87,6 +91,14 @@ const messageCountInfo = {
 
 const onReceiveMessage = () => {
   window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
+    if (message.messageType == 6) {
+      const localMessage = messageList.value.find((item) => item.messageId == message.messageId)
+      if (localMessage != null) {
+        localMessage.status = 1
+      }
+      return
+    }
+
     let curSession = chatSessionList.value.find((item) => item.sessionId == message.sessionId)
     if (curSession == null) {
       chatSessionList.value.push(message.extendData)

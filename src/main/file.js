@@ -176,6 +176,10 @@ const getLocalFilePath = async (partType, showCover, fileId) => {
     localPath = path.join(localFolder, fileId + fileSuffix)
   }
 
+  if (showCover) {
+    localPath = localPath + cover_image_suffix
+  }
+
   return localPath
 }
 

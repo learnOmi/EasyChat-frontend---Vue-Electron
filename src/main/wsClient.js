@@ -5,7 +5,7 @@ import {
   saveOrUpdate4Message,
   selectUserSessionByContactId
 } from './db/ChatSessionUserModel'
-import { saveMessageBatch, saveMessage } from './db/ChatMessageModel'
+import { saveMessageBatch, saveMessage, updateMessage } from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
 const NODE_ENV = process.env.NODE_ENV
 
@@ -58,7 +58,10 @@ const createWs = () => {
         sender.send('receiveMessage', { messageType: message.messageType })
         break
 
+      // 聊天消息
+      // 媒体文件
       case 2:
+      case 5:
         if (message.sendUserId == store.getUserId() && message.contactType == 1) {
           break
         }
@@ -75,6 +78,12 @@ const createWs = () => {
         await saveMessage(message)
         dbSessionInfo = await selectUserSessionByContactId(message.contactId)
         message.extendData = dbSessionInfo
+        sender.send('receiveMessage', message)
+        break
+
+      // 文件上传完成
+      case 6:
+        updateMessage({ status: message.status }, { messageId: message.messageId })
         sender.send('receiveMessage', message)
         break
     }

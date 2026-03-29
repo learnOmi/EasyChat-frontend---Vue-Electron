@@ -116,6 +116,31 @@ const hidePopover = () => {
   showEmojiPopover.value = false
 }
 
+const openPopover = () => {
+  document.addEventListener('click', hidePopover, false)
+}
+
+const closePopover = () => {
+  document.removeEventListener('click', hidePopover, false)
+}
+
+const showEmojiPopoverHandler = () => {
+  showEmojiPopover.value = true
+}
+
+const sendEmoji = (emoji) => {
+  msgContent.value += emoji
+  showEmojiPopover.value = false
+}
+
+const fileLimit = 9
+const uploadExceed = (files, fileList) => {
+  proxy.Message({
+    message: `最多只能上传${fileLimit}个文件`,
+    type: 'warning'
+  })
+}
+
 const sendMessage = (e) => {
   if (e.shiftKey && e.keycode === 13) {
     return

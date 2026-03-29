@@ -1,6 +1,13 @@
 <template>
   <div class="image-panel" @click="showImageHandler">
-    <el-image :src="serverUrl" fit="scale-down" :width="width"></el-image>
+    <el-image :src="serverUrl" fit="scale-down" :width="width">
+      <template #error>
+        <span class="iconfont icon-Clear1"></span>
+      </template>
+    </el-image>
+    <div v-if="showPlay" class="play-panel">
+      <span class="iconfont icon-dianji"></span>
+    </div>
   </div>
 </template>
 

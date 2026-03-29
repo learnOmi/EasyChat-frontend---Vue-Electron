@@ -14,8 +14,12 @@
           <template v-if="data.fileType == 0">
             <ChatMessageImage :data="data"></ChatMessageImage>
           </template>
-          <template v-else-if="data.fileType == 1"> </template>
-          <template v-else-if="data.fileType == 2"> </template>
+          <template v-else-if="data.fileType == 1">
+            <ChatMessageVideo :data="data"></ChatMessageVideo>
+          </template>
+          <template v-else-if="data.fileType == 2">
+            <ChatMessageFile :data="data"></ChatMessageFile>
+          </template>
         </div>
       </template>
     </div>
@@ -46,8 +50,12 @@
           <template v-if="data.fileType == 0">
             <ChatMessageImage :data="data"></ChatMessageImage>
           </template>
-          <template v-else-if="data.fileType == 1"> </template>
-          <template v-else-if="data.fileType == 2"> </template>
+          <template v-else-if="data.fileType == 1">
+            <ChatMessageVideo :data="data"></ChatMessageVideo>
+          </template>
+          <template v-else-if="data.fileType == 2">
+            <ChatMessageFile :data="data"></ChatMessageFile>
+          </template>
         </div>
       </template>
     </div>
@@ -59,6 +67,8 @@ import ChatMessageImage from './ChatMessageImage.vue'
 import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import DOMPurify from 'dompurify'
+import ChatMessageVideo from './ChatMessageVideo.vue'
+import ChatMessageFile from './ChatMessageFile.vue'
 const { proxy } = getCurrentInstance()
 const userInfoStore = useUserInfoStore()
 
