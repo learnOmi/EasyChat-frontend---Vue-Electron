@@ -6,7 +6,9 @@
 
 <script setup>
 import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
+import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'
 const { proxy } = getCurrentInstance()
+const globalInfoStore = useGlobalInfoStore()
 
 const props = defineProps({
   width: {
@@ -36,8 +38,8 @@ const props = defineProps({
 
 const serverUrl = computed(() => {
   if (!props.fileId) return
-  return ''
-  // TODO 获取本地服务的图片URL
+  const serverPort = globalInfoStore.getInfo('localServerPort')
+  return `http://127.0.0.1:${serverPort}/file?fileId=${props.fileId}&partType=${props.partType}&fileType=${props.fileType}&showCover=true&forceGet=${props.forceGet}&${new Date().getTime()}`
 })
 </script>
 

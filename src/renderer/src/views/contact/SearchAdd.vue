@@ -84,7 +84,7 @@ const show = (data) => {
   nextTick(() => {
     formDataRef.value.resetFields()
     formData.value = Object.assign({}, data)
-    formData.value.applyInfo = '我是' + userInfoStore.getInfo().nickName
+    formData.value.applyInfo = '我是' + userInfoStore.getUserInfo().nickName
   })
 }
 

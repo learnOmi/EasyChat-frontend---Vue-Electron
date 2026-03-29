@@ -124,7 +124,10 @@ const queryCount = (sql, params) => {
   return new Promise((resolve, reject) => {
     const stmt = db.prepare(sql)
     stmt.get(params, function (err, row) {
-      if (err) resolve(0)
+      if (err) {
+        resolve(0)
+        return
+      }
       resolve(Array.from(Object.values(row))[0])
     })
     stmt.finalize()

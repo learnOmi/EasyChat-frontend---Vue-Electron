@@ -1,5 +1,6 @@
 import { insertOrIgnore, queryOne, run, update } from './ADB'
 import store from '../store'
+import { startLocalServer } from '../file'
 const os = require('os')
 
 const userDir = os.homedir()
@@ -10,7 +11,7 @@ const updateContactNoReadCount = async ({ userId, noReadCount }) => {
     return
   }
   if (noReadCount) {
-    sql = 'update user_setting set contact_no_read = contact_no + ? where user_id = ?'
+    sql = 'update user_setting set contact_no_read = contact_no_read + ? where user_id = ?'
   } else {
     noReadCount = 0
     sql = 'update user_setting set contact_no_read = ? where user_id = ?'
@@ -20,8 +21,8 @@ const updateContactNoReadCount = async ({ userId, noReadCount }) => {
 
 const addUserSetting = async (userId, email) => {
   let sql = 'select max(server_port) server_port from user_setting'
-  let serverPort = await queryOne(sql, [])
-  if (!serverPort) {
+  let { serverPort } = await queryOne(sql, [])
+  if (!serverPort || typeof serverPort !== Number) {
     serverPort = 10240
   } else {
     serverPort++
@@ -36,8 +37,9 @@ const addUserSetting = async (userId, email) => {
   sql = 'select * from user_setting where user_id = ?'
   const userInfo = await queryOne(sql, [userId])
   if (userInfo) {
-    await update('sys_setting', { email: email }, { userId: userId })
-    resultServerPort = userInfo.serverPort
+    const updateData = { email, ...(!userInfo.serverPort && { serverPort }) }
+    await update('user_setting', updateData, { userId: userId })
+    resultServerPort = updateData.serverPort ? userInfo.serverPort : serverPort
     localFileFolder = JSON.parse(userInfo.sysSetting).localFileFolder + userId
   } else {
     await insertOrIgnore('user_setting', {
@@ -50,6 +52,7 @@ const addUserSetting = async (userId, email) => {
     resultServerPort = serverPort
   }
   // TODO 启动本地服务
+  startLocalServer(resultServerPort)
   store.setUserData('localServerPort', resultServerPort)
   store.setUserData('localFileFolder', localFileFolder)
 }

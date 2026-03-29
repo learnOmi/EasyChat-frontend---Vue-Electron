@@ -8,10 +8,18 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  # 排除 assets 目录（使用 extraResources 单独处理）
+  - '!assets/**/*'
 asarUnpack:
   - resources/**
 win:
   executableName: easy-chat
+  # Windows 额外资源：复制 ffmpeg.exe 到应用目录
+  extraResources:
+    - from: assets/ffmpeg/
+      to: ffmpeg/
+      filter:
+        - '**/*'
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -25,6 +33,12 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
+  # macOS 额外资源
+  extraResources:
+    - from: assets/ffmpeg/
+      to: ffmpeg/
+      filter:
+        - '**/*'
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
@@ -34,6 +48,12 @@ linux:
     - deb
   maintainer: electronjs.org
   category: Utility
+  # Linux 额外资源
+  extraResources:
+    - from: assets/ffmpeg/
+      to: ffmpeg/
+      filter:
+        - '**/*'
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false

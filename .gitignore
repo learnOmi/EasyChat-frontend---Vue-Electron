@@ -4,3 +4,7 @@ out
 .DS_Store
 .eslintcache
 *.log*
+
+# FFmpeg files (不要提交 FFmpeg 可执行文件到 Git)
+assets/ffmpeg/*.exe
+assets/ffmpeg/ffmpeg

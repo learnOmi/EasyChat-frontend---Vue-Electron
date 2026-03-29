@@ -252,6 +252,7 @@ const submit = async () => {
       screenHeight, // 屏幕高度
       screenWidth // 屏幕宽度
     })
+    window.electron.ipcRenderer.send('getLocalStore', 'devWsDomain')
   } else {
     // 注册成功提示
     proxy.Message.success('注册成功，请登录')

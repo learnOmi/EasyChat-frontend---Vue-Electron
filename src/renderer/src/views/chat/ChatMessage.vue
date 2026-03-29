@@ -1,5 +1,5 @@
 <template>
-  <div v-if="data.sendUserId === userInfoStore.getInfo().userId" class="message-content-my">
+  <div v-if="data.sendUserId === userInfoStore.getUserInfo().userId" class="message-content-my">
     <div :class="['content-panel', data.messageType == 5 ? 'content-panel-media' : '']">
       <div v-if="data.status == 0" class="sending">
         <el-skeleton :animated="true">
@@ -9,11 +9,17 @@
         </el-skeleton>
       </div>
       <template v-else>
-        <div v-if="data.messageType != 5" class="content" v-html="safeLastMessaget"></div>
-        <div v-else class="content">暂定媒体消息</div>
+        <div v-if="data.messageType != 5" class="content" v-html="safeLastMessage"></div>
+        <div v-else class="content">
+          <template v-if="data.fileType == 0">
+            <ChatMessageImage :data="data"></ChatMessageImage>
+          </template>
+          <template v-else-if="data.fileType == 1"> </template>
+          <template v-else-if="data.fileType == 2"> </template>
+        </div>
       </template>
     </div>
-    <Avatar :width="35" :user-id="userInfoStore.getInfo().userId"></Avatar>
+    <Avatar :width="35" :user-id="userInfoStore.getUserInfo().userId"></Avatar>
   </div>
   <div v-else class="message-content-other">
     <div class="user-avatar">
@@ -35,14 +41,21 @@
         </el-skeleton>
       </div>
       <template v-else>
-        <div v-if="data.messageType != 5" class="content" v-html="safeLastMessaget"></div>
-        <div v-else class="content">暂定媒体消息</div>
+        <div v-if="data.messageType != 5" class="content" v-html="safeLastMessage"></div>
+        <div v-else class="content">
+          <template v-if="data.fileType == 0">
+            <ChatMessageImage :data="data"></ChatMessageImage>
+          </template>
+          <template v-else-if="data.fileType == 1"> </template>
+          <template v-else-if="data.fileType == 2"> </template>
+        </div>
       </template>
     </div>
   </div>
 </template>
 
 <script setup>
+import ChatMessageImage from './ChatMessageImage.vue'
 import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import DOMPurify from 'dompurify'
@@ -104,7 +117,7 @@ const safeLastMessage = computed(() => {
     background: #95ec60;
     transform: rotate(45deg);
     border-radius: 2px;
-    top: 13;
+    top: 13px;
   }
 }
 

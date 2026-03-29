@@ -31,7 +31,7 @@
       <template #default>
         <div class="popover-user-panel">
           <UserBaseInfo :user-info="userInfo"></UserBaseInfo>
-          <div v-if="userId !== userInfoStore.getInfo().userId" class="op-btn">
+          <div v-if="userId !== userInfoStore.getUserInfo().userId" class="op-btn">
             <el-button v-if="userInfo.contactStatus == 1" type="primary" @click="sendMessage"
               >发送消息</el-button
             >
@@ -71,8 +71,8 @@ const props = defineProps({
 const userInfo = ref({})
 const getContactInfo = async () => {
   userInfo.value.userId = props.userId
-  if (userInfoStore.getInfo().userId == props.userId) {
-    userInfo.value = userInfoStore.getInfo()
+  if (userInfoStore.getUserInfo().userId == props.userId) {
+    userInfo.value = userInfoStore.getUserInfo()
   } else {
     let result = await proxy.Request({
       url: proxy.Api.getContactInfo,

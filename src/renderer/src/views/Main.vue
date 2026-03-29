@@ -44,7 +44,9 @@ const { proxy } = getCurrentInstance()
 const router = useRouter()
 
 import { useUserInfoStore } from '@/stores/UserInfoStore'
+import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'
 const userInfoStore = useUserInfoStore()
+const globalInfoStore = useGlobalInfoStore()
 
 const menuList = ref([
   {
@@ -81,10 +83,14 @@ const getLoginInfo = async () => {
   })
   if (!result) return
   userInfoStore.setUserInfo(result.data)
+  window.electron.ipcRenderer.send('getLocalStore', result.data.userId + 'localServerPort')
 }
 
 onMounted(() => {
   getLoginInfo()
+  window.electron.ipcRenderer.on('getLocalStoreCallback', (event, serverPort) => {
+    globalInfoStore.setInfo('localServerPort', serverPort)
+  })
 })
 </script>
 

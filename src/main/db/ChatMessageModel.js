@@ -1,4 +1,4 @@
-import { insertOrReplace, queryCount, queryAll } from './ADB'
+import { insertOrReplace, queryCount, queryAll, update, queryOne } from './ADB'
 import store from '../store'
 import { updateNoReadCount } from './ChatSessionUserModel'
 
@@ -32,21 +32,26 @@ const saveMessageBatch = async (messageList) => {
 
 const selectMessageList = async (query) => {
   const { sessionId, pageNo, maxMessageId } = query
-  let sql = 'select count(1) from chat_message where session_id ? and user_id = ?'
+  let sql = 'select count(1) from chat_message where session_id = ? and user_id = ?'
   const totalCount = await queryCount(sql, [sessionId, store.getUserId()])
   const { pageTotal, offset, limit } = getPageOffset(pageNo, totalCount)
 
   const params = [sessionId, store.getUserId()]
-  sql = 'select * from chat_message where session_id ? and user_id = ?'
+  sql = 'select * from chat_message where session_id = ? and user_id = ?'
   if (maxMessageId) {
     sql += ' and message_id <= ?'
     params.push(maxMessageId)
   }
   params.push(offset)
   params.push(limit)
-  sql += ' order by message_id asc limit ?, ?'
+  sql += ' order by message_id desc limit ?, ?'
   const dataList = await queryAll(sql, params)
   return { dataList, pageTotal, pageNo }
+}
+
+const selectByMessageId = async (messageId) => {
+  const sql = 'select * from chat_message where message_id = ?'
+  return await queryOne(sql, [messageId])
 }
 
 const getPageOffset = (pageNo, totalCount) => {
@@ -62,4 +67,9 @@ const getPageOffset = (pageNo, totalCount) => {
   }
 }
 
-export { saveMessage, saveMessageBatch, selectMessageList }
+const updateMessage = (data, paramData) => {
+  paramData.userId = store.getUserId()
+  return update('chat_message', data, paramData)
+}
+
+export { saveMessage, saveMessageBatch, selectMessageList, updateMessage, selectByMessageId }

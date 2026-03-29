@@ -22,6 +22,34 @@ import Avatar from '@/components/Avatar.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import Confirm from './utils/Confirm'
 
+// 动态设置 Content Security Policy
+const setCSP = () => {
+  // 开发环境：允许所有本地端口（便于调试）
+  // 生产环境：只允许特定源
+  const isDev = import.meta.env.MODE === 'development'
+  const imgSrc = isDev ? "'self' data: " + Api.devCSPDomain : "'self' data: " + Api.prodCSPDomain // 根据实际修改
+  const connectSrc = isDev
+    ? "'self' " + Api.devDomain + ' ' + Api.devWsDomain
+    : "'self' " + Api.prodDomain + ' ' + Api.prodWsDomain // 根据实际修改
+
+  const meta = document.createElement('meta')
+  meta.httpEquiv = 'Content-Security-Policy'
+  meta.content = `
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src ${imgSrc};
+    font-src 'self' data:;
+    connect-src 'self' ${connectSrc};
+  `
+    .replace(/\s+/g, ' ')
+    .trim() // 压缩为单行
+
+  document.head.appendChild(meta)
+}
+
+setCSP()
+
 /**
  * Vue应用初始化配置文件
  * 用于创建Vue应用实例并配置全局插件和属性

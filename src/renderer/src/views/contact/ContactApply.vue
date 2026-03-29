@@ -5,7 +5,7 @@
     :infinite-scroll-immediate="false"
   >
     <div>
-      <div v-for="item in applyList" :key="item.id" class="apply-item">
+      <div v-for="item in applyList" :key="item.apply" class="apply-item">
         <div :class="['contact-type', item.contactType == 0 ? 'user-contact' : '']">
           {{ item.contactType == 0 ? '好友' : '群聊' }}
         </div>
@@ -18,18 +18,20 @@
           <div v-if="item.status === 0">
             <el-dropdown placement="bottom-end" trigger="click">
               <span class="el-dropdown-link">
-                <el-button type="primary" link>接受</el-button>
+                <el-button type="primary" link>操作</el-button>
               </span>
               <template #dropdown>
-                <el-dropdown-item @click="dealWithApply(item.applyId, item.contactType, 1)"
-                  >同意</el-dropdown-item
-                >
-                <el-dropdown-item @click="dealWithApply(item.applyId, item.contactType, 2)"
-                  >拒绝</el-dropdown-item
-                >
-                <el-dropdown-item @click="dealWithApply(item.applyId, item.contactType, 3)"
-                  >拉黑</el-dropdown-item
-                >
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="dealWithApply(item.applyId, item.contactType, 1)"
+                    >同意</el-dropdown-item
+                  >
+                  <el-dropdown-item @click="dealWithApply(item.applyId, item.contactType, 2)"
+                    >拒绝</el-dropdown-item
+                  >
+                  <el-dropdown-item @click="dealWithApply(item.applyId, item.contactType, 3)"
+                    >拉黑</el-dropdown-item
+                  >
+                </el-dropdown-menu>
               </template>
             </el-dropdown>
           </div>

@@ -4,6 +4,18 @@
   // 调试配置数组
   "configurations": [
     {
+      "name": "Debug Main Process Official",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "args" : ["."]
+    },
+    
+    {
       // 配置名称，用于在调试器中选择
       "name": "Debug Main Process",
       // 调试类型，这里使用Node.js

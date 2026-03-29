@@ -5,7 +5,7 @@
     <div class="user-info">
       <div class="user-name-panel">
         <div class="user-name">{{ data.contactName }}</div>
-        <div class="message-time">{{ proxy.Utils.formatData(data.lastReceiveTime) }}</div>
+        <div class="message-time">{{ proxy.Utils.formatDate(data.lastReceiveTime) }}</div>
       </div>
       <div class="last-message" v-html="safeLastMessage"></div>
     </div>

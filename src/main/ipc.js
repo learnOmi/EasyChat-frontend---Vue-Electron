@@ -9,7 +9,8 @@ import {
   updateSessionInfo4Message,
   readAll
 } from './db/ChatSessionUserModel'
-import { saveMessage, selectMessageList } from './db/ChatMessageModel'
+import { saveMessage, selectMessageList, updateMessage } from './db/ChatMessageModel'
+import { saveFile2Local } from './file'
 
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
@@ -86,7 +87,14 @@ const onSetSessionSelected = () => {
 const onAddLocalMessage = () => {
   ipcMain.on('addLocalMessage', async (e, data) => {
     await saveMessage(data)
-    // TODO 保存文件
+    if (data.messageType === 5) {
+      // 保存图片到本地；上传到服务器；生成缩略图
+      await saveFile2Local(data.messageId, data.buffer, data.fileType)
+      const updateInfo = {
+        status: 1
+      }
+      await updateMessage(updateInfo, { messageId: data.messageId })
+    }
     // 更新session
     data.lastReceiveTime = data.sendTime
     // TODO 更新会话

@@ -6,7 +6,7 @@ const saveOrUpdateChatSessionBatch4Init = async (chatSessionList) => {
     for (let i = 0; i < chatSessionList.length; i++) {
       const sessionInfo = chatSessionList[i]
       sessionInfo.status = 1
-      let sessionData = await selectUserSessionByContactId(sessionInfo.contact_id)
+      let sessionData = await selectUserSessionByContactId(sessionInfo.contactId)
       if (sessionData) {
         await updateChatSession(sessionInfo)
       } else {

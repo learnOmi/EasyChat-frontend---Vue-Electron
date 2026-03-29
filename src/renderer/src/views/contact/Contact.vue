@@ -30,9 +30,10 @@
             </div>
             <template v-for="contact in item.contactData" :key="contact[item.contactId]">
               <div
-                :class="
-                  ['part-item', contact[item.contactId]] == route.query.contactId ? 'active' : ''
-                "
+                :class="[
+                  'part-item',
+                  contact[item.contactId] == route.query.contactId ? 'active' : ''
+                ]"
                 @click="contactDetail(contact, item)"
               >
                 <Avatar :user-id="contact[item.contactId]" :width="35" />
@@ -250,6 +251,7 @@ watch(
       padding: 10px 10px;
       display: flex;
       align-items: center;
+      position: relative;
       &:hover {
         cursor: pointer;
         background: #d6d6d7;

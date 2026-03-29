@@ -2,7 +2,6 @@
   <div class="send-panel">
     <div class="toolbar">
       <el-popover
-        :visible="showEmojiPopover"
         trigger="click"
         placement="top"
         :teleported="false"
@@ -15,7 +14,7 @@
       >
         <template #default>
           <el-tabs v-model="activeEmoji" @click.stop>
-            <el-tab-panel
+            <el-tab-pane
               v-for="emoji in emojiList"
               :key="emoji.name"
               :label="emoji.name"
@@ -27,9 +26,11 @@
                   :key="item"
                   class="emoji-item"
                   @click="sendEmoji(item)"
-                ></div>
+                >
+                  {{ item }}
+                </div>
               </div>
-            </el-tab-panel>
+            </el-tab-pane>
           </el-tabs>
         </template>
         <template #reference>
@@ -45,14 +46,14 @@
         :http-request="uploadFile"
         :on-exceed="uploadExceed"
       >
-        <div clas="iconfont icon-a-floder"></div>
+        <div class="iconfont icon-a-folder"></div>
       </el-upload>
     </div>
     <div class="input-area" @drop="dropHandler" @dragover="dragoverHandler">
       <el-input
         v-model="msgContent"
         type="textarea"
-        rows="5"
+        :rows="5"
         resize="none"
         maxlength="500"
         show-word-limit
@@ -64,7 +65,6 @@
     </div>
     <div class="send-btn-panel">
       <el-popover
-        trigger="click"
         :visible="showSendMsgPopover"
         :hide-after="1500"
         placement="top-end"
@@ -93,8 +93,9 @@
 import emojiList from '../../utils/Emoji'
 import SearchAdd from '@/views/contact/SearchAdd.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
-import { userUserInfoStore } from '@/stores/UserInfoStore'
-const userInfoStore = userUserInfoStore()
+import { useUserInfoStore } from '@/stores/UserInfoStore'
+import { getFileType } from '@/utils/Constants'
+const userInfoStore = useUserInfoStore()
 const { proxy } = getCurrentInstance()
 
 const props = defineProps({
@@ -126,6 +127,7 @@ const sendMessage = (e) => {
     showSendMsgPopover.value = true
     return
   }
+  showSendMsgPopover.value = false
   sendMessageDo(
     {
       messageContent,
@@ -147,14 +149,14 @@ const sendMessageDo = async (messageObj, cleanMsgContent) => {
     return
   }
   messageObj.sessionId = props.currentChatSession.sessionId
-  messageObj.sendUserId = userInfoStore.getUserInfo().sendUserId
+  messageObj.sendUserId = userInfoStore.getUserInfo().userId
 
   let result = await proxy.Request({
     url: proxy.Api.sendMessage,
     showLoading: false,
     params: {
-      messageContent,
       contactId: props.currentChatSession.contactId,
+      messageContent,
       messageType,
       fileSize,
       fileName,
@@ -163,7 +165,7 @@ const sendMessageDo = async (messageObj, cleanMsgContent) => {
     showError: false,
     errorCallback: (responseData) => {
       proxy.Confirm({
-        message: responseData.info,
+        message: responseData.message,
         okfun: () => {
           addContact(props.currentChatSession.contactId, responseData.code)
         },
@@ -191,6 +193,38 @@ const addContact = async (contactId, code) => {
     contactId,
     contactType: code == 902 ? 'USER' : 'GROUP'
   })
+}
+
+const uploadRef = ref()
+const uploadFile = (file) => {
+  uploadFileDo(file.file)
+  uploadRef.value.clearFiles()
+}
+
+const getFileTypeByName = (fileName) => {
+  const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1)
+  return getFileType(fileExt)
+}
+const uploadFileDo = async (file) => {
+  const fileType = getFileTypeByName(file.name)
+  // 使用 FileReader 读取文件内容
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    const arrayBuffer = e.target.result
+
+    sendMessageDo(
+      {
+        messageContent: `[${getFileType(fileType)}]`,
+        messageType: 5,
+        fileSize: file.size,
+        fileName: file.name,
+        fileType,
+        buffer: arrayBuffer
+      },
+      false
+    )
+  }
+  reader.readAsArrayBuffer(file)
 }
 </script>
 

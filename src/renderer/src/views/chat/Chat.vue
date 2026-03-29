@@ -241,6 +241,15 @@ const sendMessage4LocalHandler = (messageObj) => {
   gotoBottom()
 }
 
+const onAddLocalMessage = (message) => {
+  window.electron.ipcRenderer.on('addLocalCallback', (e, { messageId, status }) => {
+    const findMessage = messageList.value.find((item) => item.messageId == messageId)
+    if (findMessage != null) {
+      findMessage.status = status
+    }
+  })
+}
+
 // 滚动到底部
 const gotoBottom = () => {
   // 使用nextTick确保DOM更新后执行
@@ -261,12 +270,14 @@ onMounted(() => {
   // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
   loadChatSession()
   onLoadChatMessage()
+  onAddLocalMessage()
 })
 
 onUnmounted(() => {
   window.electron.ipcRenderer.removeAllListeners('receiveMessage')
   window.electron.ipcRenderer.removeAllListeners('loadSessionDataCallback')
   window.electron.ipcRenderer.removeAllListeners('loadChatMessageCallback')
+  window.electron.ipcRenderer.removeAllListeners('addLocalCallback')
 })
 </script>
 

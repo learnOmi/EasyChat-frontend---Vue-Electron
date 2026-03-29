@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-diallog
+    <el-dialog
       :show-close="showClose"
       :draggable="false"
       :model-value="show"
@@ -27,7 +27,7 @@
           </el-button>
         </div>
       </template>
-    </el-diallog>
+    </el-dialog>
   </div>
 </template>
 
