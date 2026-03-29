@@ -1,7 +1,13 @@
 <template>
   <div class="main">
     <div class="left-sider">
-      <div></div>
+      <div>
+        <Avatar
+          :user-id="userInfoStore.getUserInfo().userId"
+          :width="35"
+          :show-detail="false"
+        ></Avatar>
+      </div>
       <div class="menu-list">
         <template v-for="item in menuList">
           <div

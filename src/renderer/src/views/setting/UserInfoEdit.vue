@@ -50,7 +50,9 @@ import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
 const { proxy } = getCurrentInstance()
 import AreaSelect from '@/components/AreaSelect.vue'
 import { useUserInfoStore } from '@/stores/userInfoStore'
+import { useAvatarUploadStore } from '@/stores/AvatarUploadStore'
 const userInfoStore = useUserInfoStore()
+const avatarUploadStore = useAvatarUploadStore()
 
 const props = defineProps({
   data: {
@@ -72,9 +74,9 @@ const rules = {
   nickName: [{ required: true, message: '请输入昵称' }]
 }
 
-const saveCover = (avatarFile, coverFile) => {
+const saveCover = ({ avatarFile, coverFile }) => {
   formData.value.avatarFile = avatarFile
-  formData.value.coverFile = coverFile
+  formData.value.avatarCover = coverFile
 }
 
 const emit = defineEmits(['editBack'])
@@ -93,6 +95,7 @@ const saveUserInfo = () => {
       delete params.area
     }
     //强制刷新头像
+    avatarUploadStore.setForceReload(userInfoStore.getUserInfo().userId, false)
 
     let result = await proxy.Request({
       url: proxy.Api.saveUserInfo,
@@ -104,6 +107,7 @@ const saveUserInfo = () => {
 
     proxy.Message.success('保存成功')
     userInfoStore.setInfo(result.data)
+    avatarUploadStore.setForceReload(userInfoStore.getUserInfo().userId, true)
     emit('editBack')
   })
 }

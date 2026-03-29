@@ -309,4 +309,21 @@ const downLoadFile = async (fileId, showCover, savePath, partType) => {
   }
 }
 
-export { saveFile2Local, startLocalServer, closeLocalServer }
+const createCover = async (fileBuffer) => {
+  const ffmpegPath = getFFmpegPath()
+  let avatarPath = await getLocalFilePath('avatar', false, store.getUserId() + '_temp')
+  let coverPath = await getLocalFilePath('avatar', false, store.getUserId() + '_temp_cover')
+  let targetDir = path.dirname(avatarPath)
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true })
+  }
+  fs.writeFileSync(avatarPath, Buffer.from(fileBuffer))
+  const command = `${ffmpegPath} -y -i "${avatarPath}" -vframes 1 -vf "scale=170:170:force_original_aspect_ratio=decrease" -q:v 2 "${coverPath}"`
+  await execCommand(command)
+  return {
+    avatarStream: fs.readFileSync(avatarPath),
+    coverStream: fs.readFileSync(coverPath)
+  }
+}
+
+export { saveFile2Local, startLocalServer, closeLocalServer, createCover }

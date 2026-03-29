@@ -37,7 +37,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, computed, onUnmounted, onMounted } from 'vue'
+import { getFileType, getFileTypeByName } from '@/utils/Constants'
 const { proxy } = getCurrentInstance()
 
 const props = defineProps({
@@ -47,14 +48,43 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['coverFile'])
+
 const preview = computed(() => {
   return props.modelValue instanceof File
 })
 
+const localFile = ref(null)
 const uploadImage = async (file) => {
   file = file.file
-  //window.ipcRenderer.send('uploadImage', file)
+  const fileType = getFileTypeByName(file.name)
+  // 使用 FileReader 读取文件内容
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    const arrayBuffer = e.target.result
+    window.electron.ipcRenderer.send('createCover', arrayBuffer)
+  }
+  reader.readAsArrayBuffer(file)
 }
+
+onMounted(() => {
+  window.electron.ipcRenderer.on('createCoverCallback', (event, { avatarStream, coverStream }) => {
+    const coverBlob = new Blob([coverStream], { type: 'image/png' })
+    const coverFile = new File([coverBlob], 'thumbnail.jpg')
+    let img = new FileReader()
+    img.readAsDataURL(coverFile)
+    img.onload = (e) => {
+      localFile.value = e.target.result
+    }
+    const avatarBlob = new Blob([avatarStream], { type: 'image/png' })
+    const avatarFile = new File([avatarBlob], 'thumbnail2.jpg')
+    emit('coverFile', { avatarFile, coverFile })
+  })
+})
+
+onUnmounted(() => {
+  window.electron.ipcRenderer.removeAllListeners('createCoverCallback')
+})
 </script>
 
 <style lang="scss" scoped>

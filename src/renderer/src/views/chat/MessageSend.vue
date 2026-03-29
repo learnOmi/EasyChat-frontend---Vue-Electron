@@ -90,11 +90,11 @@
 </template>
 
 <script setup>
-import emojiList from '../../utils/Emoji'
+import emojiList from '@/utils/Emoji'
 import SearchAdd from '@/views/contact/SearchAdd.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
-import { getFileType } from '@/utils/Constants'
+import { getFileType, getFileTypeByName } from '@/utils/Constants'
 const userInfoStore = useUserInfoStore()
 const { proxy } = getCurrentInstance()
 
@@ -201,10 +201,6 @@ const uploadFile = (file) => {
   uploadRef.value.clearFiles()
 }
 
-const getFileTypeByName = (fileName) => {
-  const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1)
-  return getFileType(fileExt)
-}
 const uploadFileDo = async (file) => {
   const fileType = getFileTypeByName(file.name)
   // 使用 FileReader 读取文件内容

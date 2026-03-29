@@ -8,14 +8,16 @@
       :width="width"
       :file-id="userId"
       part-type="avatar"
-      :force-get="false"
+      :force-get="avatarUploadStore.getForceReload(userId)"
     ></ShowLocalImage>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { useAvatarUploadStore } from '@/stores/AvatarUploadStore'
 const { proxy } = getCurrentInstance()
+const avatarUploadStore = useAvatarUploadStore()
 
 const props = defineProps({
   userId: {

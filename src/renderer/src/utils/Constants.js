@@ -27,4 +27,9 @@ const getFileType = (suffix) => {
   return fileType == undefined ? 2 : fileType
 }
 
-export { getFileType }
+const getFileTypeByName = (fileName) => {
+  const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1)
+  return getFileType(fileExt)
+}
+
+export { getFileType, getFileTypeByName }
