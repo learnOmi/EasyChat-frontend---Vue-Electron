@@ -6,6 +6,41 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "47123949",
+      "name": "更新",
+      "font_class": "gengxin",
+      "unicode": "e60c",
+      "unicode_decimal": 58892
+    },
+    {
+      "icon_id": "47128898",
+      "name": "fullscreen-exit",
+      "font_class": "fullscreen-exit",
+      "unicode": "e605",
+      "unicode_decimal": 58885
+    },
+    {
+      "icon_id": "47128910",
+      "name": "projection",
+      "font_class": "projection",
+      "unicode": "e60b",
+      "unicode_decimal": 58891
+    },
+    {
+      "icon_id": "47128931",
+      "name": "zoomin",
+      "font_class": "zoomin",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "47128938",
+      "name": "zooout",
+      "font_class": "zooout",
+      "unicode": "e603",
+      "unicode_decimal": 58883
+    },
+    {
       "icon_id": "5889323",
       "name": "更多",
       "font_class": "more",
@@ -333,6 +368,13 @@
       "font_class": "line_chevron_left",
       "unicode": "e7d7",
       "unicode_decimal": 59351
+    },
+    {
+      "icon_id": "47233783",
+      "name": "line_chevron_right",
+      "font_class": "line_chevron_right-copy",
+      "unicode": "1020c",
+      "unicode_decimal": 66060
     },
     {
       "icon_id": "44562745",

@@ -72,6 +72,7 @@ const serverUrl = computed(() => {
     width: 100%;
     height: 100%;
     display: flex;
+    justify-content: center;
     align-items: center;
     cursor: pointer;
     .icon-video-play {

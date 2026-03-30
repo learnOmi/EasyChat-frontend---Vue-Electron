@@ -14,8 +14,11 @@ import {
   onLoadChatMessage,
   onAddLocalMessage,
   onSetSessionSelected,
-  onCreateCover
+  onCreateCover,
+  onOpenNewWindow,
+  onSaveAs
 } from './ipc'
+import { saveWindow } from './windowProxy'
 
 const login_width = 300
 const login_height = 370
@@ -49,6 +52,8 @@ function createWindow() {
       sandbox: false
     }
   })
+
+  saveWindow('main', mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -159,6 +164,8 @@ app.whenReady().then(() => {
   onAddLocalMessage()
   onSetSessionSelected()
   onCreateCover()
+  onOpenNewWindow()
+  onSaveAs()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

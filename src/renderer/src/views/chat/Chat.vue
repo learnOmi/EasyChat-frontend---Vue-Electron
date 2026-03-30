@@ -51,7 +51,11 @@
             <template
               v-if="data.messageType == 1 || data.messageType == 2 || data.messageType == 5"
             >
-              <ChatMessage :data="data" :current-chat-session="currentChatSession"></ChatMessage>
+              <ChatMessage
+                :data="data"
+                :current-chat-session="currentChatSession"
+                @show-media-detail="showMediaDetailHandler"
+              ></ChatMessage>
             </template>
           </div>
         </div>
@@ -273,6 +277,29 @@ const gotoBottom = () => {
         items[items.length - 1].scrollIntoView()
       })
     }
+  })
+}
+
+const showMediaDetailHandler = (messageId) => {
+  let showFileList = messageList.value.filter((item) => item.messageType == 5)
+  showFileList = showFileList.map((item) => {
+    return {
+      partType: 'chat',
+      fileId: item.messageId,
+      fileType: item.fileType,
+      fileName: item.fileName,
+      fileSize: item.fileSize,
+      forceGet: false
+    }
+  })
+  window.electron.ipcRenderer.send('openNewWindow', {
+    windowId: 'media',
+    title: '图片查看',
+    data: {
+      currentFileId: messageId,
+      fileList: showFileList
+    },
+    path: '/showMedia'
   })
 }
 
