@@ -12,7 +12,13 @@
       "windows": {
         "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
       },
-      "args" : ["."]
+      "args" : ["."],
+      "env": {
+        // 关键点：强制设置 NODE_ENV 为 development
+        // 这样代码中的 (NODE_ENV == 'development') 就会为 true
+        // 从而统一使用 /.easychattest/ 路径
+        "NODE_ENV": "development"
+      }
     },
     
     {

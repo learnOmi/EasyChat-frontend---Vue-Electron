@@ -43,15 +43,41 @@
       <div v-show="Object.keys(currentChatSession).length > 0" class="chat-panel">
         <div id="message-panel" class="message-panel">
           <div
-            v-for="data in messageList"
+            v-for="(data, index) in messageList"
             :id="'message' + data.messageId"
             :key="data.messageId"
             class="message-item"
           >
             <template
+              v-if="
+                index > 1 &&
+                data.sendTime - messageList[index - 1].sendTime > 5 * 60 * 1000 &&
+                (data.messageType == 2 || data.messageType == 5)
+              "
+            >
+              <ChatMessageTime :data="data"></ChatMessageTime>
+            </template>
+            <template
+              v-if="
+                data.messageType == 1 ||
+                data.messageType == 3 ||
+                data.messageType == 8 ||
+                data.messageType == 9 ||
+                data.messageType == 11 ||
+                data.messageType == 12 ||
+                data.messageType == 13
+              "
+            >
+              <ChatMessageSys :data="data"></ChatMessageSys>
+            </template>
+            <template
               v-if="data.messageType == 1 || data.messageType == 2 || data.messageType == 5"
             >
-              <ChatMessage :data="data" :current-chat-session="currentChatSession"></ChatMessage>
+              <ChatMessage
+                :data="data"
+                :current-chat-session="currentChatSession"
+                @show-media-detail="showMediaDetailHandler"
+              ></ChatMessage>
             </template>
           </div>
         </div>
@@ -75,6 +101,8 @@ import ChatMessage from './ChatMessage.vue'
 import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
+import ChatMessageTime from './ChatMessageTime.vue'
+import ChatMessageSys from './ChatMessageSys.vue'
 const { proxy } = getCurrentInstance()
 
 const searchKey = ref()
@@ -273,6 +301,29 @@ const gotoBottom = () => {
         items[items.length - 1].scrollIntoView()
       })
     }
+  })
+}
+
+const showMediaDetailHandler = (messageId) => {
+  let showFileList = messageList.value.filter((item) => item.messageType == 5)
+  showFileList = showFileList.map((item) => {
+    return {
+      partType: 'chat',
+      fileId: item.messageId,
+      fileType: item.fileType,
+      fileName: item.fileName,
+      fileSize: item.fileSize,
+      forceGet: false
+    }
+  })
+  window.electron.ipcRenderer.send('openNewWindow', {
+    windowId: 'media',
+    title: '图片查看',
+    data: {
+      currentFileId: messageId,
+      fileList: showFileList
+    },
+    path: '/showMedia'
   })
 }
 

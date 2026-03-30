@@ -12,13 +12,13 @@
         <div v-if="data.messageType != 5" class="content" v-html="safeLastMessage"></div>
         <div v-else class="content">
           <template v-if="data.fileType == 0">
-            <ChatMessageImage :data="data"></ChatMessageImage>
+            <ChatMessageImage :data="data" @click="showDetail"></ChatMessageImage>
           </template>
           <template v-else-if="data.fileType == 1">
-            <ChatMessageVideo :data="data"></ChatMessageVideo>
+            <ChatMessageVideo :data="data" @click="showDetail"></ChatMessageVideo>
           </template>
           <template v-else-if="data.fileType == 2">
-            <ChatMessageFile :data="data"></ChatMessageFile>
+            <ChatMessageFile :data="data" @click="showDetail"></ChatMessageFile>
           </template>
         </div>
       </template>
@@ -48,13 +48,13 @@
         <div v-if="data.messageType != 5" class="content" v-html="safeLastMessage"></div>
         <div v-else class="content">
           <template v-if="data.fileType == 0">
-            <ChatMessageImage :data="data"></ChatMessageImage>
+            <ChatMessageImage :data="data" @click="showDetail"></ChatMessageImage>
           </template>
           <template v-else-if="data.fileType == 1">
-            <ChatMessageVideo :data="data"></ChatMessageVideo>
+            <ChatMessageVideo :data="data" @click="showDetail"></ChatMessageVideo>
           </template>
           <template v-else-if="data.fileType == 2">
-            <ChatMessageFile :data="data"></ChatMessageFile>
+            <ChatMessageFile :data="data" @click="showDetail"></ChatMessageFile>
           </template>
         </div>
       </template>
@@ -64,7 +64,7 @@
 
 <script setup>
 import ChatMessageImage from './ChatMessageImage.vue'
-import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, computed, onMounted } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import DOMPurify from 'dompurify'
 import ChatMessageVideo from './ChatMessageVideo.vue'
@@ -83,10 +83,17 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['showMediaDetail'])
+
 const safeLastMessage = computed(() => {
   if (!props.data.messageContent) return ''
   return DOMPurify.sanitize(props.data.messageContent)
 })
+
+const showDetail = () => {
+  if (props.data.status == 0) return
+  emit('showMediaDetail', props.data.messageId)
+}
 </script>
 
 <style lang="scss" scoped>

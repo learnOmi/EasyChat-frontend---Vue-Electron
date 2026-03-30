@@ -4,7 +4,7 @@ const fs = require('fs')
 const fse = require('fs-extra')
 const NODE_ENV = process.env.NODE_ENV
 const path = require('path')
-const { app, ipcMain, shell } = require('electron')
+const { app, dialog } = require('electron')
 const { exec } = require('child_process')
 const FormData = require('form-data')
 const axios = require('axios')
@@ -43,7 +43,7 @@ const saveFile2Local = async (messageId, fileBuffer, fileType) => {
     let command
     if (fileType !== 0) {
       // 使用ffprobe检测视频流的编码格式
-      command = `${ffprobePath} -v error -select_streams v:0 -show_entries stream=codec_name '${savePath}'`
+      command = `${ffprobePath} -v error -select_streams v:0 -show_entries stream=codec_name "${savePath}"`
       let result = await execCommand(command)
       // 解析输出结果获取编码格式
       let codec = result
@@ -54,7 +54,7 @@ const saveFile2Local = async (messageId, fileBuffer, fileType) => {
       if ('hevc' == codec) {
         const tempPath = savePath + '.tmp'
         try {
-          command = `${ffmpegPath} -y -i '${savePath}' -c:v libx264 -crf 20 '${tempPath}'`
+          command = `${ffmpegPath} -y -i "${savePath}" -c:v libx264 -crf 20 "${tempPath}"`
           await execCommand(command)
 
           // 只有转码成功（代码走到这里），才进行替换
@@ -73,7 +73,7 @@ const saveFile2Local = async (messageId, fileBuffer, fileType) => {
       // 设置封面文件路径
       coverPath = savePath + cover_image_suffix
       // 使用ffmpeg生成缩略图，缩放到170x170
-      command = `${ffmpegPath} -i '${savePath}' -y -vframes 1 -vf 'scale=min(170\\,iw*min(170/iw\\,170/ih)):min(170\\,ih*min(170/iw\\,170/ih))' '${coverPath}'`
+      command = `${ffmpegPath} -i "${savePath}" -y -vframes 1 -vf "scale=min(170\\,iw*min(170/iw\\,170/ih)):min(170\\,ih*min(170/iw\\,170/ih))" "${coverPath}"`
       await execCommand(command)
     } else {
       coverPath = savePath + cover_image_suffix
@@ -196,47 +196,126 @@ const closeLocalServer = () => {
   }
 }
 
+/**
+ * 处理文件获取请求，支持图片、视频等文件的本地读取、远程下载及流式传输。
+ *
+ * 该接口具备以下功能：
+ * 1. 参数校验与规范化。
+ * 2. 检查本地文件是否存在，不存在则触发下载逻辑。
+ * 3. 支持强制刷新文件（forceGet）。
+ * 4. 针对视频文件支持 HTTP Range 请求，实现分段加载和播放。
+ * 5. 统一的错误处理机制。
+ *
+ * @route GET /file
+ *
+ * @param {Object} req - Express 请求对象
+ * @param {Object} req.query - 请求查询参数
+ * @param {String} req.query.partType - 文件所属部分类型 (例如: 'avatar', 'chat')
+ * @param {String|Number} req.query.fileType - 文件类型标识 (例如: '1' 代表视频, '0' 代表图片)
+ * @param {String|Number} req.query.fileId - 文件的唯一标识 ID
+ * @param {Boolean} [req.query.showCover=false] - 是否获取封面图 (true/false)
+ * @param {Boolean} [req.query.forceGet=false] - 是否强制重新下载并覆盖本地文件 (true/false)
+ *
+ * @param {Object} res - Express 响应对象
+ *
+ * @returns {void} 直接通过 res 对象返回文件流或错误信息
+ */
 expressServer.get('/file', async (req, res) => {
-  let { partType, fileType, fileId, showCover, forceGet } = req.query
+  // 1. 参数解构与基础校验
+  const { partType, fileType, fileId, showCover, forceGet } = req.query
+
+  // 统一参数校验逻辑
   if (!partType || !fileType || !fileId) {
-    res.status(400).send('参数错误')
-    return
+    return res.status(400).send('参数错误')
   }
-  showCover = showCover == undefined ? false : Boolean(showCover)
-  const localPath = await getLocalFilePath(partType, showCover, fileId)
 
-  // 检查文件是否存在并下载
-  if (!fs.existsSync(localPath) || forceGet == 'true') {
-    if (forceGet == 'true' && partType == 'avatar') {
-      await downLoadFile(fileId, true, localPath + cover_image_suffix, partType)
+  // 2. 规范化布尔值和类型
+  const isShowCover = String(showCover) === 'true'
+  const isForceGet = String(forceGet) === 'true'
+  const isVideo = String(fileType) === '1'
+
+  try {
+    // 3. 获取本地路径
+    const localPath = await getLocalFilePath(partType, isShowCover, fileId)
+
+    // 4. 文件存在性检查与下载逻辑
+    // 使用 fs.promises.access 替代 existsSync，更符合异步风格
+    const fileExists = await fs.promises
+      .access(localPath)
+      .then(() => true)
+      .catch(() => false)
+
+    if (!fileExists || isForceGet) {
+      // 特殊处理头像强制更新
+      if (isForceGet && partType === 'avatar') {
+        await downLoadFile(fileId, true, localPath + cover_image_suffix, partType)
+      }
+      // 下载主文件
+      await downLoadFile(fileId, isShowCover, localPath, partType)
     }
-    await downLoadFile(fileId, showCover, localPath, partType)
+
+    // 5. 设置通用响应头
+    res.setHeader('Access-Control-Allow-Origin', '*')
+
+    // 修正 Content-Type 逻辑，确保格式正确 (例如 "image/png" 而不是 "imagepng")
+    // 注意：这里假设 FILE_TYPE_CONTENT_TYPE 返回类似 "image/" 的前缀
+    const ext = path.extname(localPath).substring(1)
+    const contentType = `${FILE_TYPE_CONTENT_TYPE[fileType] || 'application/octet-stream'}${ext}`
+    res.setHeader('Content-Type', contentType)
+
+    // 6. 流传输处理
+    // 如果是封面图或非视频文件，直接全量传输
+    if (isShowCover || !isVideo) {
+      const stream = fs.createReadStream(localPath)
+      return stream.pipe(res)
+    }
+
+    // 7. 视频文件流处理 (支持 Range 请求)
+    const stat = await fs.promises.stat(localPath)
+    const fileSize = stat.size
+    const range = req.headers.range
+
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-')
+      const start = parseInt(parts[0], 10)
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+
+      // 边界检查：防止请求范围超出文件大小
+      if (start >= fileSize) {
+        res.setHeader('Content-Range', `bytes */${fileSize}`)
+        return res.status(416).send('Requested Range Not Satisfiable')
+      }
+
+      const chunksize = end - start + 1
+      const stream = fs.createReadStream(localPath, { start, end })
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': contentType
+      })
+
+      stream.pipe(res)
+    } else {
+      // 视频不支持 Range 请求时的回退（通常浏览器会请求 Range）
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': contentType,
+        'Accept-Ranges': 'bytes' // 告诉客户端支持 Range
+      })
+      fs.createReadStream(localPath).pipe(res)
+    }
+  } catch (err) {
+    // 8. 统一错误处理
+    console.error('文件服务错误:', err)
+    // 确保在错误发生时没有发送过响应头
+    if (!res.headersSent) {
+      res.status(500).send('服务器内部错误')
+    } else {
+      res.end()
+    }
   }
-
-  const fileSuffix = localPath.substring(localPath.lastIndexOf('.') + 1)
-  let contentType = FILE_TYPE_CONTENT_TYPE[fileType] + fileSuffix
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Content-Type', contentType)
-
-  const readStream = fs.createReadStream(localPath)
-
-  // 监听错误事件，防止文件读取错误导致连接挂起
-  readStream.on('error', (err) => {
-    console.error('文件读取流错误:', err)
-    res.status(500).send('文件读取失败')
-    // 发生错误时手动关闭流
-    readStream.destroy()
-  })
-
-  // 使用 pipe 传输数据，并监听 'close' 事件确保流结束
-  readStream.pipe(res)
-
-  res.on('close', () => {
-    // 当响应连接关闭时，确保读取流也被销毁
-    readStream.destroy()
-  })
-
-  return
 })
 
 // 从服务器下载文件
@@ -261,34 +340,57 @@ const downLoadFile = async (fileId, showCover, savePath, partType) => {
       },
       config
     )
+
+    // 1. 确保目录存在
     const folder = path.dirname(savePath)
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder, { recursive: true })
     }
+
+    // 1. 安全获取 Content-Type，防止 undefined
+    const contentType = res.headers['content-type'] || ''
+
+    // 2. 获取 Content-Length，并转换为数字
+    const contentLength = parseInt(res.headers['content-length'] || '0', 10)
+
+    // 3. 判断是否为有效文件流
+    // 如果 Content-Length 为 0，或者 Content-Type 是 JSON，都视为无效/错误响应
+    const isValidFileStream =
+      contentLength > 0 && !contentType.toLowerCase().includes('application/json')
+
     const fileStream = fs.createWriteStream(savePath)
-    // 使用 Promise 包装流操作，以便 await
+    let sourceStream
+
+    if (!isValidFileStream) {
+      // 下载失败或返回了空数据/错误信息
+      console.warn(
+        `下载文件失败或返回空数据: fileId=${fileId}, length=${contentLength}, type=${contentType}`
+      )
+
+      // 读取默认图片
+      let resourcesPath = getResourcePath()
+      const defaultImagePath =
+        partType === 'avatar'
+          ? path.join(resourcesPath, '/assets/default.png')
+          : path.join(resourcesPath, '/assets/404.png')
+
+      sourceStream = fs.createReadStream(defaultImagePath)
+    } else {
+      // 有效文件流
+      sourceStream = res.data
+    }
+
+    // 4. 管道传输
     await new Promise((resolve, reject) => {
-      let sourceStream
-
-      // 判断是否返回了错误信息（假设 200 OK 但 Content-Type 是 json 表示业务错误）
-      if (res.headers['content-type'] == 'application/json') {
-        let resourcesPath = getResourcePath()
-        const defaultImagePath =
-          partType === 'avatar'
-            ? path.join(resourcesPath, '/assets/default.png')
-            : path.join(resourcesPath, '/assets/404.png')
-
-        sourceStream = fs.createReadStream(defaultImagePath)
-      } else {
-        sourceStream = res.data
-      }
-
-      // 管道传输
       sourceStream.pipe(fileStream)
 
-      // 监听错误事件
       sourceStream.on('error', (err) => {
         console.error('Source stream error:', err)
+        // 清理可能写入的不完整数据
+        fileStream.close()
+        if (fs.existsSync(savePath)) {
+          fs.unlinkSync(savePath)
+        }
         reject(err)
       })
 
@@ -297,7 +399,6 @@ const downLoadFile = async (fileId, showCover, savePath, partType) => {
         reject(err)
       })
 
-      // 监听完成事件
       fileStream.on('finish', () => {
         fileStream.close()
         resolve()
@@ -305,7 +406,7 @@ const downLoadFile = async (fileId, showCover, savePath, partType) => {
     })
   } catch (err) {
     console.error('downLoadFile error:', err)
-    // 可以选择删除不完整的文件
+    // 发生异常时，删除不完整的文件
     if (fs.existsSync(savePath)) {
       fs.unlinkSync(savePath)
     }
@@ -330,4 +431,27 @@ const createCover = async (fileBuffer) => {
   }
 }
 
-export { saveFile2Local, startLocalServer, closeLocalServer, createCover }
+const saveAs = async ({ partType, fileId }) => {
+  let fileName = ''
+  if (partType == 'avatar') {
+    fileName = fileId + image_suffix
+  } else if (partType == 'chat') {
+    let messageInfo = selectByMessageId(fileId)
+    fileName = messageInfo.fileName
+  }
+  const localPath = await getLocalFilePath(partType, false, fileId)
+
+  const options = {
+    title: '保存文件',
+    defaultPath: fileName
+  }
+  let result = await dialog.showSaveDialog(options)
+  if (result.canceled || result.filePath == '') {
+    return
+  }
+  const filePath = result.filePath
+
+  fs.copyFileSync(localPath, filePath)
+}
+
+export { saveFile2Local, startLocalServer, closeLocalServer, createCover, saveAs }

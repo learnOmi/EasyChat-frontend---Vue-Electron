@@ -22,7 +22,7 @@ const updateContactNoReadCount = async ({ userId, noReadCount }) => {
 const addUserSetting = async (userId, email) => {
   let sql = 'select max(server_port) server_port from user_setting'
   let { serverPort } = await queryOne(sql, [])
-  if (!serverPort || typeof serverPort !== Number) {
+  if (!serverPort || typeof serverPort !== 'number') {
     serverPort = 10240
   } else {
     serverPort++

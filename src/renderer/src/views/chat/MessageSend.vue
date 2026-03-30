@@ -94,8 +94,10 @@ import emojiList from '@/utils/Emoji'
 import SearchAdd from '@/views/contact/SearchAdd.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
+import { useSysSettingStore } from '@/stores/SysSettingStore'
 import { getFileType, getFileTypeByName } from '@/utils/Constants'
 const userInfoStore = useUserInfoStore()
+const sysSettingStore = useSysSettingStore()
 const { proxy } = getCurrentInstance()
 
 const props = defineProps({
@@ -133,12 +135,38 @@ const sendEmoji = (emoji) => {
   showEmojiPopover.value = false
 }
 
+const checkFileSize = (fileType, fileSize, fileName) => {
+  const SIZE_MB = 1024 * 1024
+  const maxImageSize = sysSettingStore.getSetting().maxImageSize
+  const maxVideoSize = sysSettingStore.getSetting().maxVideoSize
+  const maxFileSize = sysSettingStore.getSetting().maxFileSize
+  if (
+    (fileType == 0 && fileSize / SIZE_MB > maxImageSize) ||
+    (fileType == 1 && fileSize / SIZE_MB > maxVideoSize) ||
+    (fileType == 2 && fileSize / SIZE_MB > maxFileSize)
+  ) {
+    proxy.Confirm({
+      message: `${fileName}大小超过限制！MAX: ${maxImageSize}MB`,
+      showCancelBtn: false
+    })
+    return false
+  }
+  return true
+}
+
 const fileLimit = 9
-const uploadExceed = (files, fileList) => {
-  proxy.Message({
-    message: `最多只能上传${fileLimit}个文件`,
-    type: 'warning'
-  })
+const cheFileLimit = (fileList) => {
+  if (fileList.length > fileLimit) {
+    proxy.Message({
+      message: `最多只能上传${fileLimit}个文件`,
+      type: 'warning'
+    })
+    return false
+  }
+  return true
+}
+const uploadExceed = (files) => {
+  cheFileLimit(files)
 }
 
 const sendMessage = (e) => {
@@ -165,7 +193,14 @@ const sendMessage = (e) => {
 const sendMessageDo = async (messageObj, cleanMsgContent) => {
   const { messageContent, messageType, localFilePath, fileSize, fileName, filePath, fileType } =
     messageObj
-  //TODO 判断文件大小
+  if (
+    fileSize !== undefined &&
+    fileSize !== null &&
+    fileSize > 0 &&
+    !checkFileSize(fileType, fileSize, fileName)
+  ) {
+    return
+  }
   if (fileSize !== undefined && fileSize !== null && fileSize == 0) {
     proxy.Confirm({
       message: `${fileName}是一个空文件！`,
@@ -246,6 +281,36 @@ const uploadFileDo = async (file) => {
     )
   }
   reader.readAsArrayBuffer(file)
+}
+
+const dragoverHandler = (event) => {
+  event.preventDefault()
+}
+
+// 拖入文件
+const dropHandler = (event) => {
+  event.preventDefault()
+  const files = event.dataTransfer.files
+  if (!cheFileLimit(files)) {
+    return
+  }
+  for (let i = 0; i < files.length; i++) {
+    uploadFileDo(files[i])
+  }
+}
+
+// 粘贴文件
+const pasteFile = async (event) => {
+  let items = event.clipboardData && event.clipboardData.items
+  if (!items) {
+    return
+  }
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file') {
+      const file = await items[i].getAsFile()
+      uploadFileDo(file)
+    }
+  }
 }
 </script>
 

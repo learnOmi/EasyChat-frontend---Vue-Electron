@@ -1,4 +1,6 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
+import { join } from 'path'
+import { is } from '@electron-toolkit/utils'
 import store from './store'
 import { initWs } from './wsClient'
 import { addUserSetting } from './db/UserSettingModel'
@@ -10,7 +12,10 @@ import {
   readAll
 } from './db/ChatSessionUserModel'
 import { saveMessage, selectMessageList, updateMessage } from './db/ChatMessageModel'
-import { createCover, saveFile2Local } from './file'
+import { createCover, saveFile2Local, saveAs } from './file'
+import { getWindow, saveWindow, delWindow } from './windowProxy'
+import icon from '../../resources/icon.png?asset'
+const NODE_ENV = process.env.NODE_ENV
 
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
@@ -110,6 +115,88 @@ const onCreateCover = () => {
   })
 }
 
+const onOpenNewWindow = () => {
+  ipcMain.on('openNewWindow', (e, config) => {
+    openWindow(config)
+    //e.sender.send('openNewWindowCallback', config)
+  })
+}
+
+const openWindow = ({ windowId, title = 'EasyChat', path, width = 800, height = 600, data }) => {
+  const localServerPort = store.getUserData('localServerPort')
+  data.localServerPort = localServerPort
+
+  let newWindow = getWindow(windowId)
+  if (!newWindow) {
+    newWindow = new BrowserWindow({
+      width: width,
+      height: height,
+      fullscreen: false,
+      fullscreenable: false,
+      maximizable: false,
+      autoHideMenuBar: true,
+      titleBarStyle: 'hidden',
+      resizable: false,
+      frame: true,
+      transparent: true,
+      hasShadow: false,
+      show: false,
+      ...(process.platform === 'linux' ? { icon } : {}),
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        contextIsolation: true,
+        sandbox: false
+      }
+    })
+
+    saveWindow(windowId, newWindow)
+    newWindow.setMinimumSize(600, 400)
+
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      newWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/index.html#${path}`)
+    } else {
+      newWindow.loadFile(join(__dirname, `../renderer/index.html`), { hash: path })
+    }
+
+    if (NODE_ENV === 'development') {
+      newWindow.webContents.openDevTools()
+    }
+    newWindow.on('ready-to-show', () => {
+      newWindow.show()
+      newWindow.setTitle(title)
+    })
+
+    // 监听获取数据事件
+    const readyHandler = () => {
+      console.log('Received showMediaReady, sending pageInitData...')
+      newWindow.webContents.send('pageInitData', data)
+      // 发送完毕后，移除本次监听，避免多次触发
+      ipcMain.removeListener('showMediaReady', readyHandler)
+    }
+    ipcMain.on('showMediaReady', readyHandler)
+
+    newWindow.on('closed', () => {
+      delWindow(windowId)
+      // 窗口关闭时，确保移除可能残留的监听器
+      ipcMain.removeListener('showMediaReady', readyHandler)
+    })
+
+    newWindow.on('closed', () => {
+      delWindow(windowId)
+    })
+  } else {
+    newWindow.show()
+    newWindow.setSkipTaskbar(true)
+    newWindow.webContents.send('pageInitData', data)
+  }
+}
+
+const onSaveAs = () => {
+  ipcMain.on('saveAs', (e, data) => {
+    saveAs(data)
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -122,5 +209,7 @@ export {
   onTopChatSession,
   onAddLocalMessage,
   onSetSessionSelected,
-  onCreateCover
+  onCreateCover,
+  onOpenNewWindow,
+  onSaveAs
 }

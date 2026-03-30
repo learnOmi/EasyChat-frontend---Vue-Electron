@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, Tray, Menu } from 'electron'
-import { join } from 'path'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
@@ -14,8 +15,11 @@ import {
   onLoadChatMessage,
   onAddLocalMessage,
   onSetSessionSelected,
-  onCreateCover
+  onCreateCover,
+  onOpenNewWindow,
+  onSaveAs
 } from './ipc'
+import { saveWindow } from './windowProxy'
 
 const login_width = 300
 const login_height = 370
@@ -49,6 +53,8 @@ function createWindow() {
       sandbox: false
     }
   })
+
+  saveWindow('main', mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -159,6 +165,8 @@ app.whenReady().then(() => {
   onAddLocalMessage()
   onSetSessionSelected()
   onCreateCover()
+  onOpenNewWindow()
+  onSaveAs()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

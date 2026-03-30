@@ -51,8 +51,10 @@ const router = useRouter()
 
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'
+import { useSysSettingStore } from '@/stores/SysSettingStore'
 const userInfoStore = useUserInfoStore()
 const globalInfoStore = useGlobalInfoStore()
+const sysSettingStore = useSysSettingStore()
 
 const menuList = ref([
   {
@@ -92,7 +94,16 @@ const getLoginInfo = async () => {
   window.electron.ipcRenderer.send('getLocalStore', result.data.userId + 'localServerPort')
 }
 
+const getSysSetting = async () => {
+  let result = await proxy.Request({
+    url: proxy.Api.getSysSetting
+  })
+  if (!result) return
+  sysSettingStore.setSetting(result.data)
+}
+
 onMounted(() => {
+  getSysSetting()
   getLoginInfo()
   window.electron.ipcRenderer.on('getLocalStoreCallback', (event, serverPort) => {
     globalInfoStore.setInfo('localServerPort', serverPort)

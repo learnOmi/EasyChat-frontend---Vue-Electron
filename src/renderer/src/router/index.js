@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('@/views/Login.vue')
     },
     {
+      path: '/showMedia',
+      name: '展示媒体信息',
+      component: () => import('@/views/show/ShowMedia.vue')
+    },
+    {
       path: '/main',
       redirect: '/chat',
       name: '主界面',

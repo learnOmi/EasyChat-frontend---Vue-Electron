@@ -31,6 +31,9 @@ const setCSP = () => {
   const connectSrc = isDev
     ? "'self' " + Api.devDomain + ' ' + Api.devWsDomain
     : "'self' " + Api.prodDomain + ' ' + Api.prodWsDomain // 根据实际修改
+  const mediaSrc = isDev
+    ? "'self' blob: data: " + Api.devCSPDomain // 允许本地所有端口、blob 和 data 协议
+    : "'self' blob: data: " + Api.prodCSPDomain // 生产环境加上你的生产域名
 
   const meta = document.createElement('meta')
   meta.httpEquiv = 'Content-Security-Policy'
@@ -41,6 +44,7 @@ const setCSP = () => {
     img-src ${imgSrc};
     font-src 'self' data:;
     connect-src 'self' ${connectSrc};
+    media-src ${mediaSrc}; 
   `
     .replace(/\s+/g, ' ')
     .trim() // 压缩为单行

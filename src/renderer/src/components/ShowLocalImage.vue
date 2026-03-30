@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, computed, onMounted } from 'vue'
 import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'
 const { proxy } = getCurrentInstance()
 const globalInfoStore = useGlobalInfoStore()
@@ -72,6 +72,7 @@ const serverUrl = computed(() => {
     width: 100%;
     height: 100%;
     display: flex;
+    justify-content: center;
     align-items: center;
     cursor: pointer;
     .icon-video-play {
