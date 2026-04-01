@@ -91,6 +91,10 @@
       </div>
     </template>
   </Layout>
+  <ChatGroupDetail
+    ref="chatGroupDetailRef"
+    @del-chat-session-callback="delChatSession"
+  ></ChatGroupDetail>
 </template>
 
 <script setup>
@@ -98,6 +102,7 @@ import Blank from '@/components/Blank.vue'
 import ChatSession from './ChatSession.vue'
 import MessageSend from './MessageSend.vue'
 import ChatMessage from './ChatMessage.vue'
+import ChatGroupDetail from './ChatGroupDetail.vue'
 import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
@@ -116,6 +121,8 @@ const messageCountInfo = {
   maxMessageId: null,
   noData: false
 }
+let distanceBottom = 0
+const chatGroupDetailRef = ref()
 
 const onReceiveMessage = () => {
   window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
@@ -166,6 +173,7 @@ const onLoadChatMessage = () => {
       dataList.sort((a, b) => {
         return a.messageId - b.messageId
       })
+      const lastMessage = messageList.value[0]
       messageList.value = dataList.concat(messageList.value)
       messageCountInfo.pageNo = pageNo
       messageCountInfo.totalPage = pageTotal
@@ -173,9 +181,17 @@ const onLoadChatMessage = () => {
         messageCountInfo.maxMessageId =
           dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
         gotoBottom()
+      } else {
+        nextTick(() => {
+          document.querySelector('#message' + lastMessage.messageId).scrollIntoView()
+        })
       }
     }
   )
+}
+
+const handleSearch = () => {
+  
 }
 
 // 会话列表排序
@@ -235,11 +251,12 @@ const delChatSession = (contactId) => {
   delChatSessionList(contactId)
   currentChatSession.value = {}
   // TODO 设置选中的会话
-  window.ipcRenderer.send('delChatSession', contactId)
+  window.electron.ipcRenderer.send('delChatSession', contactId)
 }
 
 // 点击打开会话
 const chatSessionClickHandler = (item) => {
+  distanceBottom = 0
   currentChatSession.value = Object.assign({}, item)
   //TODO 清空未读消息记录数
 
@@ -294,6 +311,9 @@ const onAddLocalMessage = (message) => {
 const gotoBottom = () => {
   // 使用nextTick确保DOM更新后执行
   nextTick(() => {
+    if (distanceBottom > 200) {
+      return
+    }
     const items = document.querySelectorAll('.message-item')
     if (items.length > 0) {
       // 使用setTimeout确保浏览器已经渲染完成
@@ -327,6 +347,10 @@ const showMediaDetailHandler = (messageId) => {
   })
 }
 
+const showGroupDetail = () => {
+  chatGroupDetailRef.value.show(currentChatSession.value.contactId)
+}
+
 onMounted(() => {
   onReceiveMessage()
   onLoadSessionData()
@@ -334,6 +358,17 @@ onMounted(() => {
   loadChatSession()
   onLoadChatMessage()
   onAddLocalMessage()
+
+  nextTick(() => {
+    const messagePanel = document.querySelector('#message-panel')
+    messagePanel.addEventListener('scroll', (e) => {
+      const scrollTop = e.target.scrollTop
+      distanceBottom = e.target.scrollHeight - scrollTop - e.target.clientHeight
+      if (scrollTop == 0 && messageList.value.length > 0) {
+        loadChatMessage()
+      }
+    })
+  })
 })
 
 onUnmounted(() => {

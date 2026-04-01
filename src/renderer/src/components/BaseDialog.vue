@@ -5,10 +5,10 @@
       :draggable="false"
       :model-value="show"
       :close-on-click-modal="false"
-      :tile="title"
+      :title="title"
       class="cust-dialog"
       :top="top + `px`"
-      :width="width"
+      :width="width + `px`"
       @close="close"
     >
       <div class="dialog-body" :style="{ 'max-height': maxHeight + 'px', padding: padding + 'px' }">

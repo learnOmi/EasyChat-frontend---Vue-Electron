@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+		"label": "build:electron",
+		"type": "npm",
+		"script": "build",
+		"group": "build",
+		"problemMatcher": [],
+		"detail": "构建 Electron 应用",
+		"isBackground": false,
+		// --- 新增部分开始 ---
+		"options": {
+			"shell": {
+			// 强制使用 cmd.exe 而不是 PowerShell
+			"executable": "cmd.exe",
+			"args": ["/d", "/c"]
+			}
+		}
+		// --- 新增部分结束 ---
+		}
+	]
+}

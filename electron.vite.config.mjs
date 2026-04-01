@@ -33,6 +33,9 @@ export default defineConfig({
       }
     },
     plugins: [vue()], // 使用 Vue 插件支持 Vue 开发
+    optimizeDeps: {
+      exclude: ['sqlite3', 'better-sqlite3'] // 排除数据库模块的预构建
+    },
     /**
      * 开发服务器配置
      */
@@ -52,6 +55,14 @@ export default defineConfig({
       }
     },
     build: {
+      commonjsOptions: {
+        transformMixedEsModules: true,
+        // 确保Node.js内置模块不被打包
+        exclude: ['sqlite3', 'better-sqlite3']
+      },
+      rollupOptions: {
+        external: ['sqlite3', 'better-sqlite3'] // 将数据库模块标记为外部依赖
+      },
       sourcemap: true // 生成源码映射文件
     }
   }

@@ -32,7 +32,7 @@ const addChatSession = (sessionInfo) => {
 const updateChatSession = (sessionInfo) => {
   const paramData = {
     userId: store.getUserId(),
-    contactId: sessionInfo.contact_id
+    contactId: sessionInfo.contactId
   }
   const updateInfo = Object.assign({}, sessionInfo)
   updateInfo.userId = null

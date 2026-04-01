@@ -17,7 +17,7 @@
             max-length="30"
             @focus="clearVerify"
           >
-            <template #prefix><icon class="iconfont icon-youxiang" /></template>
+            <template #prefix><span class="iconfont icon-youxiang" /></template>
           </el-input>
         </el-form-item>
         <el-form-item v-if="!isLogin" prop="nickName">
@@ -29,7 +29,7 @@
             max-length="15"
             @focus="clearVerify"
           >
-            <template #prefix><icon class="iconfont icon-geren" /></template>
+            <template #prefix><span class="iconfont icon-geren" /></template>
           </el-input>
         </el-form-item>
         <el-form-item prop="password">
@@ -41,7 +41,7 @@
             placeholder="请输入密码"
             @focus="clearVerify"
           >
-            <template #prefix><icon class="iconfont icon-quanxian" /></template>
+            <template #prefix><span class="iconfont icon-quanxian" /></template>
           </el-input>
         </el-form-item>
         <el-form-item v-if="!isLogin" prop="repassword">
@@ -53,7 +53,7 @@
             placeholder="请再次输入密码"
             @focus="clearVerify"
           >
-            <template #prefix><icon class="iconfont icon-quanxian" /></template>
+            <template #prefix><span class="iconfont icon-quanxian" /></template>
           </el-input>
         </el-form-item>
         <el-form-item prop="checkcode">
@@ -66,7 +66,7 @@
               placeholder="请输入验证码"
               @focus="clearVerify"
             >
-              <template #prefix><icon class="iconfont icon-anquan" /></template>
+              <template #prefix><span class="iconfont icon-anquan" /></template>
             </el-input>
             <img :src="checkCodeUrl" class="check-code" @click="changeCheckCode" />
           </div>

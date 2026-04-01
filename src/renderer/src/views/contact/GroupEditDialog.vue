@@ -1,5 +1,5 @@
 <template>
-  <Dialog
+  <BaseDialog
     :show="dialogConfig.show"
     :title="dialogConfig.title"
     :button="dialogConfig.button"
@@ -8,10 +8,11 @@
     @close="dialogConfig.show = false"
   >
     <GroupEditForm ref="groupEditRef" @eidt-back="eidtBack"></GroupEditForm>
-  </Dialog>
+  </BaseDialog>
 </template>
 
 <script setup>
+import GroupEditForm from './GroupEditForm.vue'
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 const { proxy } = getCurrentInstance()
 

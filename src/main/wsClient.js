@@ -58,10 +58,12 @@ const createWs = () => {
         sender.send('receiveMessage', { messageType: message.messageType })
         break
 
-      // 聊天消息
-      // 媒体文件
-      case 2:
-      case 5:
+      case 2: // 聊天消息
+      case 5: // 媒体文件
+      case 9: // 好友加入群组
+      case 8: // 解散群聊
+      case 11: //退出群聊
+      case 12: //踢出群聊
         if (message.sendUserId == store.getUserId() && message.contactType == 1) {
           break
         }
@@ -73,6 +75,9 @@ const createWs = () => {
             sessionInfo.contactName = message.sendUserNickName
           }
           sessionInfo.lastReceiveTime = message.sendTime
+        }
+        if (messageType == 9 || messageType == 11 || messageType == 12) {
+          sessionInfo.memberCount = message.memberCount
         }
         await saveOrUpdate4Message(store.getUserData('currentSessionId'), sessionInfo)
         await saveMessage(message)

@@ -12,7 +12,7 @@
       <AvatarUpload
         ref="avatarUploadRef"
         v-model="formData.avatarFile"
-        @cover-f-ile="saveCover"
+        @cover-file="saveCover"
       ></AvatarUpload>
     </el-form-item>
     <el-form-item label="加入权限" prop="joinType">
@@ -45,7 +45,9 @@
 import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 const { proxy } = getCurrentInstance()
 import { useContactStateStore } from '@/stores/ContactStateStore'
+import { useAvatarUploadStore } from '@/stores/AvatarUploadStore'
 const contactStateStore = useContactStateStore()
+const avatarUploadStore = useAvatarUploadStore()
 
 const formData = ref({})
 const formDataRef = ref()
@@ -62,6 +64,9 @@ const submit = async () => {
       return
     }
     let params = {}
+    if (params.groupId) {
+      avatarUploadStore.setForceReload(params.groupId, false)
+    }
     Object.assign(params, formData.value)
     let result = await proxy.Request({
       url: proxy.Api.saveGroup,
@@ -76,13 +81,18 @@ const submit = async () => {
     } else {
       proxy.Message.success('创建群组成功')
     }
-    formDataRef.value.resetFileds()
+    formDataRef.value.resetFields()
     contactStateStore.setContactReload('MY')
-    //TODO 重新加载头像
+    if (params.groupId) {
+      avatarUploadStore.setForceReload(params.groupId, true)
+    }
   })
 }
 
-const saveCover = () => {}
+const saveCover = ({ avatarFile, coverFile }) => {
+  formData.value.avatarFile = avatarFile
+  formData.value.avatarCover = coverFile
+}
 
 const show = (data) => {
   formDataRef.value.resetFields();

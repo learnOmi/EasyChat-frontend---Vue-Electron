@@ -1,6 +1,6 @@
 <template>
   <div class="message-time">
-    {{ props.Utils.formatDate(data.sendTime) }}
+    {{ proxy.Utils.formatDate(data.sendTime) }}
   </div>
 </template>
 

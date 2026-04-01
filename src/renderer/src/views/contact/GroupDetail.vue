@@ -10,7 +10,7 @@
           <div class="iconfont icon-more"></div>
         </span>
         <template #dropdown>
-          <el-dropdown-menu v-if="groupInfo.groupOwnerId == userInfoStore.getInfo().userId">
+          <el-dropdown-menu v-if="groupInfo.groupOwnerId == userInfoStore.getUserInfo().userId">
             <el-dropdown-item @click="editGroupInfo">修改群信息</el-dropdown-item>
             <el-dropdown-item @click="dissolutionGroup">解散群聊</el-dropdown-item>
           </el-dropdown-menu>

@@ -13,6 +13,8 @@
         "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
       },
       "args" : ["."],
+      // 在启动调试前，先执行 tasks.json 中定义的 "build:electron" 任务
+      "preLaunchTask": "build:electron",
       "env": {
         // 关键点：强制设置 NODE_ENV 为 development
         // 这样代码中的 (NODE_ENV == 'development') 就会为 true
