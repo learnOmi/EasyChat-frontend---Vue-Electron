@@ -1,6 +1,7 @@
 <template>
   <div :class="['chat-session-item', { active: currentSession }]">
     <div v-if="data.contactType == 1" class="contact-tag">群</div>
+    <Badge :count="data.noReadCount" :top="2" :left="42" />
     <AvatarBase :user-id="data.contactId"></AvatarBase>
     <div class="user-info">
       <div class="user-name-panel">

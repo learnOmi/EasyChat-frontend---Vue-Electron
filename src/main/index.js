@@ -17,7 +17,9 @@ import {
   onSetSessionSelected,
   onCreateCover,
   onOpenNewWindow,
-  onSaveAs
+  onSaveAs,
+  onLoadContactApply,
+  onUpdateContactNoReadCount
 } from './ipc'
 import { saveWindow } from './windowProxy'
 
@@ -167,6 +169,8 @@ app.whenReady().then(() => {
   onCreateCover()
   onOpenNewWindow()
   onSaveAs()
+  onLoadContactApply()
+  onUpdateContactNoReadCount()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

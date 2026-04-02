@@ -3,7 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import store from './store'
 import { initWs } from './wsClient'
-import { addUserSetting } from './db/UserSettingModel'
+import { addUserSetting, selectSettingInfo, updateContactNoReadCount } from './db/UserSettingModel'
 import {
   selectUserSessionList,
   delChatSession,
@@ -197,6 +197,24 @@ const onSaveAs = () => {
   })
 }
 
+const onLoadContactApply = () => {
+  ipcMain.on('loadContactApply', async (e) => {
+    const userId = store.getUserId()
+    let result = await selectSettingInfo(userId)
+    let contactNoRead = 0
+    if (result != null) {
+      contactNoRead = result.contactNoRead
+    }
+    e.sender.send('loadContactApplyCallback', contactNoRead)
+  })
+}
+
+const onUpdateContactNoReadCount = () => {
+  ipcMain.on('updateContactNoReadCount', async (e, data) => {
+    updateContactNoReadCount({ userId: store.getUserId() })
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -211,5 +229,7 @@ export {
   onSetSessionSelected,
   onCreateCover,
   onOpenNewWindow,
-  onSaveAs
+  onSaveAs,
+  onLoadContactApply,
+  onUpdateContactNoReadCount
 }

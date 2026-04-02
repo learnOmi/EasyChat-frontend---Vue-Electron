@@ -27,6 +27,7 @@
             >
               <div :class="['iconfont', sub.icon]" :style="{ background: sub.iconBgColor }"></div>
               <div class="text">{{ sub.name }}</div>
+              <Badge :count="messageCountStore.getCount(sub.countKey)" :top="3" :left="45" />
             </div>
             <template v-for="contact in item.contactData" :key="contact[item.contactId]">
               <div
@@ -65,7 +66,9 @@ const { proxy } = getCurrentInstance()
 const router = useRouter()
 const route = useRoute()
 import { useContactStateStore } from '@/stores/ContactStateStore'
+import { useMessageCountStore } from '@/stores/MessageCountStore'
 const contactStateStore = useContactStateStore()
+const messageCountStore = useMessageCountStore()
 
 const searchKey = ref()
 const handleSearch = () => {}
@@ -133,6 +136,10 @@ const partJump = (data) => {
     rightTitle.value = data.name
   } else {
     rightTitle.value = ''
+  }
+  if (data.countKey) {
+    messageCountStore.setCount(data.countKey, 0, true)
+    window.electron.ipcRenderer.send('updateContactNoReadCount')
   }
   router.push(data.path)
 }

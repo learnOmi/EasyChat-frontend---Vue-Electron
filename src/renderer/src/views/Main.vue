@@ -16,7 +16,9 @@
             :class="['tab-item iconfont', item.icon, item.path == currentMenu.path ? 'active' : '']"
             @click="changeMenu(item)"
           >
-            <template v-if="item.name == 'chat'"></template>
+            <template v-if="item.name == 'chat' || item.name == 'contact'">
+              <Badge :count="messageCount[item.countKey]" :top="3" :left="15" />
+            </template>
           </div>
         </template>
       </div>
@@ -45,9 +47,13 @@
 <script setup>
 import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import WinOp from '../components/WinOp.vue'
 const { proxy } = getCurrentInstance()
 const router = useRouter()
+import { useMessageCountStore } from '@/stores/MessageCountStore'
+const messageCountStore = useMessageCountStore()
+const { messageCount } = storeToRefs(messageCountStore)
 
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'

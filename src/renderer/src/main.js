@@ -20,7 +20,8 @@ import UserBaseInfo from '@/components/UserBaseInfo.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import Avatar from '@/components/Avatar.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
-import Confirm from './utils/Confirm'
+import Confirm from '@/utils/Confirm'
+import Badge from '@/components/Badge.vue'
 
 // 动态设置 Content Security Policy
 const setCSP = () => {
@@ -68,6 +69,7 @@ app.component('UserBaseInfo', UserBaseInfo)
 app.component('BaseDialog', BaseDialog)
 app.component('Avatar', Avatar)
 app.component('AvatarUpload', AvatarUpload)
+app.component('Badge', Badge)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Request = Request

@@ -109,6 +109,8 @@ import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 import ChatMessageTime from './ChatMessageTime.vue'
 import ChatMessageSys from './ChatMessageSys.vue'
 const { proxy } = getCurrentInstance()
+import { useMessageCountStore } from '@/stores/MessageCountStore'
+const messageCountStore = useMessageCountStore()
 
 const searchKey = ref()
 const search = () => {}
@@ -126,6 +128,11 @@ const chatGroupDetailRef = ref()
 
 const onReceiveMessage = () => {
   window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
+    if (message.messageType == 4) {
+      loadContactApply()
+      return
+    }
+
     if (message.messageType == 6) {
       const localMessage = messageList.value.find((item) => item.messageId == message.messageId)
       if (localMessage != null) {
@@ -143,7 +150,7 @@ const onReceiveMessage = () => {
     sortChatSessionList(chatSessionList.value)
 
     if (message.sessionId != currentChatSession.value.sessionId) {
-      // TODO 会话需展示未读消息气泡
+      messageCountStore.setCount('chatCount', 1, false)
     } else {
       Object.assign(currentChatSession.value, message.extendData)
       messageList.value.push(message)
@@ -158,6 +165,11 @@ const loadChatSession = () => {
 
 const onLoadSessionData = () => {
   window.electron.ipcRenderer.on('loadSessionDataCallback', (e, dataList) => {
+    let noReadCount = 0
+    dataList.forEach((item) => {
+      noReadCount += item.noReadCount
+    })
+    messageCountStore.setCount('chatCount', noReadCount, true)
     sortChatSessionList(dataList)
     chatSessionList.value = dataList
   })
@@ -190,9 +202,7 @@ const onLoadChatMessage = () => {
   )
 }
 
-const handleSearch = () => {
-  
-}
+const handleSearch = () => {}
 
 // 会话列表排序
 const sortChatSessionList = (dataList) => {
@@ -258,7 +268,9 @@ const delChatSession = (contactId) => {
 const chatSessionClickHandler = (item) => {
   distanceBottom = 0
   currentChatSession.value = Object.assign({}, item)
-  //TODO 清空未读消息记录数
+
+  messageCountStore.setCount('chatCount', -item.noReadCount, false)
+  item.noReadCount = 0
 
   messageList.value = []
   messageCountInfo.pageNo = 0
@@ -283,6 +295,10 @@ const loadChatMessage = () => {
   })
 }
 
+const loadContactApply = () => {
+  window.electron.ipcRenderer.send('loadContactApply')
+}
+
 const setSessionSelected = ({ contactId, sessionId }) => {
   window.electron.ipcRenderer.send('setSessionSelected', { contactId, sessionId })
 }
@@ -304,6 +320,12 @@ const onAddLocalMessage = (message) => {
     if (findMessage != null) {
       findMessage.status = status
     }
+  })
+}
+
+const onLoadContactApply = () => {
+  window.electron.ipcRenderer.on('loadContactApplyCallback', (e, contactNoRead) => {
+    messageCountStore.setCount('contactApplyCount', contactNoRead, true)
   })
 }
 
@@ -356,8 +378,12 @@ onMounted(() => {
   onLoadSessionData()
   // 防止页面渲染先于initWs执行而导致onReceiveMessage没有监听到的异步问题
   loadChatSession()
+  loadContactApply()
   onLoadChatMessage()
   onAddLocalMessage()
+  onLoadContactApply()
+
+  setSessionSelected({})
 
   nextTick(() => {
     const messagePanel = document.querySelector('#message-panel')
@@ -376,6 +402,7 @@ onUnmounted(() => {
   window.electron.ipcRenderer.removeAllListeners('loadSessionDataCallback')
   window.electron.ipcRenderer.removeAllListeners('loadChatMessageCallback')
   window.electron.ipcRenderer.removeAllListeners('addLocalCallback')
+  window.electron.ipcRenderer.removeAllListeners('loadContactApplyCallback')
 })
 </script>
 

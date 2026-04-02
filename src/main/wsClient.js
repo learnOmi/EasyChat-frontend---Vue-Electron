@@ -7,6 +7,7 @@ import {
 } from './db/ChatSessionUserModel'
 import { saveMessageBatch, saveMessage, updateMessage } from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
+import { updateGroupName } from './db/ChatSessionUserModel'
 const NODE_ENV = process.env.NODE_ENV
 
 let ws = null
@@ -58,7 +59,18 @@ const createWs = () => {
         sender.send('receiveMessage', { messageType: message.messageType })
         break
 
+      // 好友申请
+      case 4:
+        await updateContactNoReadCount({
+          userId: store.getUserId(),
+          noReadCount: 1
+        })
+        sender.send('receiveMessage', { messageType: message.messageType })
+        break
+
+      case 1: // 添加好友成功
       case 2: // 聊天消息
+      case 3: // 创建群成功
       case 5: // 媒体文件
       case 9: // 好友加入群组
       case 8: // 解散群聊
@@ -89,6 +101,18 @@ const createWs = () => {
       // 文件上传完成
       case 6:
         updateMessage({ status: message.status }, { messageId: message.messageId })
+        sender.send('receiveMessage', message)
+        break
+
+      // 强制下线
+      case 7:
+        sender.send('receiveMessage', message)
+        closeWs()
+        break
+
+      // 修改群昵称
+      case 10:
+        updateGroupName(message.contactId, message.extendData)
         sender.send('receiveMessage', message)
         break
     }
