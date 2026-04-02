@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 const { proxy } = getCurrentInstance()
 
 const copying = ref(false)
@@ -33,15 +33,34 @@ const rules = {
   title: [{ required: true, message: '请输入内容' }]
 }
 
-// TODO 获取文件缓存路径
+const getSetting = () => {
+  window.electron.ipcRenderer.send('getSysSetting')
+}
 
 const changeFolder = () => {
-  
+  window.electron.ipcRenderer.send('changeLocalFolder')
 }
 
 const openLocalFolder = () => {
-  
+  window.electron.ipcRenderer.send('openLocalFolder')
 }
+
+onMounted(() => {
+  getSetting()
+  window.electron.ipcRenderer.on('getSysSettingCallback', (event, sysSetting) => {
+    copying.value = false
+    sysSetting = JSON.parse(sysSetting)
+    formData.value = { sysSetting: sysSetting.localFileFolder }
+  })
+  window.electron.ipcRenderer.on('copyingCallback', (e) => {
+    copying.value = true
+  })
+})
+
+onUnmounted(() => {
+  window.electron.ipcRenderer.removeAllListeners('getSysSettingCallback')
+  window.electron.ipcRenderer.removeAllListeners('copyingCallback')
+})
 </script>
 
 <style lang="scss" scoped>

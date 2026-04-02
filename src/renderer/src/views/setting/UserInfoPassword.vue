@@ -75,7 +75,6 @@ const saveUserInfo = () => {
         }
 
         proxy.Message.success('修改密码成功，请重新登录', () => {
-          //TODO 重新登陸
           window.electron.ipcRenderer.send('reLogin')
         })
         emit('editBack')

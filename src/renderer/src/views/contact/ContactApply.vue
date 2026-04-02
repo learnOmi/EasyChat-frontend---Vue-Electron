@@ -46,10 +46,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, watch } from 'vue'
 const { proxy } = getCurrentInstance()
 import { useContactStateStore } from '@/stores/ContactStateStore'
+import { useMessageCountStore } from '@/stores/MessageCountStore'
 const contactStateStore = useContactStateStore()
+const messageCountStore = useMessageCountStore()
 
 const applyList = ref([])
 let pageNo = 0
@@ -101,7 +103,19 @@ const dealWithApply = async (applyId, contactType, status) => {
   })
 }
 
-// TODO监听新朋友数量
+watch(
+  () => messageCountStore.messageCount.contactApplyCount,
+  (newVal, oldVal) => {
+    if (newVal) {
+      pageNo = 1
+      loadApply()
+    }
+  },
+  {
+    immediate: true,
+    deep: true
+  }
+)
 </script>
 
 <style lang="scss" scoped>

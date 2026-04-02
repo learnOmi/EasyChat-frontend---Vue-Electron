@@ -69,8 +69,20 @@ const editBack = () => {
   getUserInfo()
 }
 
-//TODO 退出登录
-const logout = () => {}
+const logout = () => {
+  proxy.Confirm({
+    message: '确定要退出登录吗?',
+    okfun: async () => {
+      window.electron.ipcRenderer.send('reLogin')
+      let result = await proxy.Request({
+        url: proxy.Api.logout
+      })
+      if (!result) {
+        return
+      }
+    }
+  })
+}
 </script>
 
 <style lang="scss" scoped>

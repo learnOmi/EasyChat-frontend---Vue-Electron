@@ -27,7 +27,7 @@
         clearable
         placeholder="请输入群公告"
         type="textarea"
-        rows="5"
+        :rows="5"
         maxlength="300"
         :show-word-limit="true"
         resize="none"

@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import WinOp from '../components/WinOp.vue'
@@ -114,6 +114,14 @@ onMounted(() => {
   window.electron.ipcRenderer.on('getLocalStoreCallback', (event, serverPort) => {
     globalInfoStore.setInfo('localServerPort', serverPort)
   })
+  window.electron.ipcRenderer.on('reLoginCallback', (e) => {
+    router.push('/login')
+  })
+})
+
+onUnmounted(() => {
+  window.electron.ipcRenderer.removeAllListeners('getLocalStoreCallback')
+  window.electron.ipcRenderer.removeAllListeners('reLoginCallback')
 })
 </script>
 

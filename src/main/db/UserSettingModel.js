@@ -62,4 +62,8 @@ const selectSettingInfo = (userId) => {
   return queryOne(sql, [userId])
 }
 
-export { updateContactNoReadCount, addUserSetting, selectSettingInfo }
+const updateUserSetting = async (userId, updateData) => {
+  await update('user_setting', { updateData }, { userId: userId })
+}
+
+export { updateContactNoReadCount, addUserSetting, selectSettingInfo, updateUserSetting }

@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import store from './store'
-import { initWs } from './wsClient'
+import { initWs, closeWs } from './wsClient'
 import { addUserSetting, selectSettingInfo, updateContactNoReadCount } from './db/UserSettingModel'
 import {
   selectUserSessionList,
@@ -12,7 +12,14 @@ import {
   readAll
 } from './db/ChatSessionUserModel'
 import { saveMessage, selectMessageList, updateMessage } from './db/ChatMessageModel'
-import { createCover, saveFile2Local, saveAs } from './file'
+import {
+  createCover,
+  saveFile2Local,
+  saveAs,
+  closeLocalServer,
+  openLocalFolder,
+  changeLocalFolder
+} from './file'
 import { getWindow, saveWindow, delWindow } from './windowProxy'
 import icon from '../../resources/icon.png?asset'
 const NODE_ENV = process.env.NODE_ENV
@@ -102,7 +109,6 @@ const onAddLocalMessage = () => {
     }
     // 更新session
     data.lastReceiveTime = data.sendTime
-    // TODO 更新会话
     updateSessionInfo4Message(store.getUserData('currentSessionId'), data)
     e.sender.send('addLocalCallback', { status: 1, messageId: data.messageId })
   })
@@ -215,6 +221,34 @@ const onUpdateContactNoReadCount = () => {
   })
 }
 
+const onReLogin = (callback) => {
+  ipcMain.on('reLogin', async (e) => {
+    callback()
+    e.sender.send('reLoginCallback')
+    closeWs()
+    closeLocalServer()
+  })
+}
+
+const onOpenLocalFolder = () => {
+  ipcMain.on('openLocalFolder', (e) => {
+    openLocalFolder()
+  })
+}
+
+const onGetSysSetting = () => {
+  ipcMain.on('getSysSetting', async (e) => {
+    let result = await selectSettingInfo(store.getUserId())
+    e.sender.send('getSysSettingCallback', result.sysSetting)
+  })
+}
+
+const onChangeLocalFolder = () => {
+  ipcMain.on('changeLocalFolder', async (e) => {
+    changeLocalFolder()
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -231,5 +265,9 @@ export {
   onOpenNewWindow,
   onSaveAs,
   onLoadContactApply,
-  onUpdateContactNoReadCount
+  onUpdateContactNoReadCount,
+  onReLogin,
+  onOpenLocalFolder,
+  onGetSysSetting,
+  onChangeLocalFolder
 }

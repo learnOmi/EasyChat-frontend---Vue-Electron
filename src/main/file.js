@@ -1,10 +1,12 @@
 import store from './store'
 import { selectByMessageId } from './db/ChatMessageModel'
+import { selectSettingInfo, updateUserSetting } from './db/UserSettingModel'
+import { getWindow } from './windowProxy'
 const fs = require('fs')
 const fse = require('fs-extra')
 const NODE_ENV = process.env.NODE_ENV
 const path = require('path')
-const { app, dialog } = require('electron')
+const { app, dialog, shell } = require('electron')
 const { exec } = require('child_process')
 const FormData = require('form-data')
 const axios = require('axios')
@@ -454,4 +456,58 @@ const saveAs = async ({ partType, fileId }) => {
   fs.copyFileSync(localPath, filePath)
 }
 
-export { saveFile2Local, startLocalServer, closeLocalServer, createCover, saveAs }
+const openLocalFolder = async () => {
+  const userId = store.getUserId()
+  let settingInfo = await selectSettingInfo(userId)
+  const sysSettng = JSON.parse(settingInfo.sysSetting)
+  const localFileFolder = sysSettng.localFileFolder + userId + '\\'
+  if (!fs.existsSync(localFileFolder)) {
+    fs.mkdirSync(localFileFolder, { recursive: true })
+  }
+  shell.openPath('file://' + localFileFolder)
+}
+
+const changeLocalFolder = async () => {
+  const userId = store.getUserId()
+  let settingInfo = await selectSettingInfo(userId)
+  const sysSettng = JSON.parse(settingInfo.sysSetting)
+  const localFileFolder = sysSettng.localFileFolder + userId + '\\'
+  const options = {
+    properties: ['openDirectory'],
+    defaultPath: localFileFolder
+  }
+  let result = await dialog.showOpenDialog(options)
+  if (result.canceled || result.filePaths.length == 0) {
+    return
+  }
+
+  const newFilePath = result.filePaths[0] + userId + '\\'
+  if (localFileFolder !== newFilePath) {
+    const userId = store.getUserId()
+    getWindow('main').webContents.send('copyingCallback', true)
+    fse.copySync(localFileFolder, newFilePath, { recursive: true }, async (err) => {
+      if (err) {
+        console.error('Error copying files:', err)
+      } else {
+        console.log('Files copied successfully!')
+      }
+    })
+    const newSysSetting = {
+      ...sysSettng,
+      localFileFolder: newFilePath + '\\'
+    }
+    await updateUserSetting(userId, JSON.stringify(newSysSetting))
+    store.setUserData('localFileFolder', newSysSetting.localFileFolder + store.getUserId())
+    getWindow('main').webContents.send('getSysSettingCallback', JSON.stringify(newSysSetting))
+  }
+}
+
+export {
+  saveFile2Local,
+  startLocalServer,
+  closeLocalServer,
+  createCover,
+  saveAs,
+  openLocalFolder,
+  changeLocalFolder
+}

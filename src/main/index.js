@@ -19,7 +19,11 @@ import {
   onOpenNewWindow,
   onSaveAs,
   onLoadContactApply,
-  onUpdateContactNoReadCount
+  onUpdateContactNoReadCount,
+  onReLogin,
+  onOpenLocalFolder,
+  onGetSysSetting,
+  onChangeLocalFolder
 } from './ipc'
 import { saveWindow } from './windowProxy'
 
@@ -171,6 +175,16 @@ app.whenReady().then(() => {
   onSaveAs()
   onLoadContactApply()
   onUpdateContactNoReadCount()
+  onReLogin(() => {
+    mainWindow.setResizable(true)
+    mainWindow.setMaximumSize(login_width, login_height)
+    mainWindow.setSize(login_width, login_height)
+    mainWindow.setResizable(false)
+    mainWindow.center()
+  })
+  onOpenLocalFolder()
+  onGetSysSetting()
+  onChangeLocalFolder()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

@@ -141,6 +141,22 @@ const onReceiveMessage = () => {
       return
     }
 
+    if (message.messageType == 7) {
+      proxy.Confirm({
+        message: '你已经被管理员强制下线',
+        okfun: () => {
+          window.electron.ipcRenderer.send('reLogin')
+        },
+        showCancelBtn: false
+      })
+    }
+
+    if (message.messageType == 10) {
+      let curSession = chatSessionList.value.find((item) => item.contactId == message.contactId)
+      curSession.contactName = message.extendData
+      return
+    }
+
     let curSession = chatSessionList.value.find((item) => item.sessionId == message.sessionId)
     if (curSession == null) {
       chatSessionList.value.push(message.extendData)
