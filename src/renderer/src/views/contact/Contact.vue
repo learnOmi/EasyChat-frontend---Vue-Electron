@@ -8,14 +8,22 @@
           placeholder="搜索联系人"
           size="small"
           clearable
-          @keyup="handleSearch"
+          @input="handleSearch"
         >
           <template #suffix>
             <i class="iconfont icon-sousuo"></i>
           </template>
         </el-input>
       </div>
-      <div class="contact-list">
+      <div v-show="searchKey" class="contact-list">
+        <SearchResult
+          v-for="item in searchList"
+          :key="item.contactId"
+          :data="item"
+          @click="searchClickHandler(item)"
+        ></SearchResult>
+      </div>
+      <div v-show="!searchKey" class="contact-list">
         <template v-for="item in partList" :key="item.partName">
           <div v-if="item.partName" class="part-title">{{ item.partName }}</div>
           <div class="part-list">
@@ -69,9 +77,45 @@ import { useContactStateStore } from '@/stores/ContactStateStore'
 import { useMessageCountStore } from '@/stores/MessageCountStore'
 const contactStateStore = useContactStateStore()
 const messageCountStore = useMessageCountStore()
+import SearchResult from '../../components/SearchResult.vue'
 
 const searchKey = ref()
-const handleSearch = () => {}
+const searchList = ref([])
+const handleSearch = () => {
+  if (!searchKey.value) {
+    return
+  }
+  searchList.value = []
+  const regex = new RegExp('(' + searchKey.value + ')', 'gi')
+  let allContactList = []
+  partList.value.forEach((list) => {
+    if (list.contactData) {
+      allContactList = list.contactData
+    }
+    allContactList.forEach((item) => {
+      let contactName = item.groupId ? item.groupName : item.contactName
+      if (contactName.includes(searchKey.value)) {
+        let newData = Object.assign({}, item)
+        newData.searchContactName =
+          newData?.contactName?.replace(regex, '<span class="highlight">$1</span>') ||
+          newData?.groupName?.replace(regex, '<span class="highlight">$1</span>')
+        newData.contactId = item.groupId || item.contactId
+        searchList.value.push(newData)
+      }
+    })
+  })
+}
+
+const searchClickHandler = (data) => {
+  searchKey.value = undefined
+  router.push({
+    path: '/chat',
+    query: {
+      chatId: data.contactId,
+      timestamp: new Date().getTime()
+    }
+  })
+}
 
 const partList = ref([
   {

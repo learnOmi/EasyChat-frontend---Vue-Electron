@@ -39,7 +39,23 @@ const props = defineProps({
 
 const showDetailHandler = () => {
   if (!props.showDetail) return
-  //TODO 查看图片详情
+  window.electron.ipcRenderer.send('openNewWindow', {
+    windowId: 'media',
+    title: '图片查看',
+    path: '/showMedia',
+    data: {
+      fileList: [
+        {
+          fileId: props.userId,
+          fileType: 0,
+          partType: 'avatar',
+          status: 1,
+          forceGet: true
+        }
+      ],
+      currentFileId: props.userId
+    }
+  })
 }
 </script>
 

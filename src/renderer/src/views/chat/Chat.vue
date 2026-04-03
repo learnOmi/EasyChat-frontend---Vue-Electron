@@ -8,14 +8,14 @@
           placeholder="搜索联系人"
           size="small"
           clearable
-          @keyup="handleSearch"
+          @input="handleSearch"
         >
           <template #suffix>
             <i class="iconfont icon-sousuo"></i>
           </template>
         </el-input>
       </div>
-      <div class="chat-session-list">
+      <div v-if="!searchKey" class="chat-session-list">
         <template v-for="item in chatSessionList" :key="item.contactId">
           <ChatSession
             :data="item"
@@ -24,6 +24,14 @@
             @contextmenu.stop="onContextmenu(item, $event)"
           ></ChatSession>
         </template>
+      </div>
+      <div v-show="searchKey" class="search-list">
+        <SearchResult
+          v-for="item in searchList"
+          :key="item.contactId"
+          :data="item"
+          @click="searchClickHandler(item)"
+        ></SearchResult>
       </div>
     </template>
     <template #right-content>
@@ -103,7 +111,9 @@ import ChatSession from './ChatSession.vue'
 import MessageSend from './MessageSend.vue'
 import ChatMessage from './ChatMessage.vue'
 import ChatGroupDetail from './ChatGroupDetail.vue'
-import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
+import SearchResult from '../../components/SearchResult.vue'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 import ChatMessageTime from './ChatMessageTime.vue'
@@ -111,9 +121,36 @@ import ChatMessageSys from './ChatMessageSys.vue'
 const { proxy } = getCurrentInstance()
 import { useMessageCountStore } from '@/stores/MessageCountStore'
 const messageCountStore = useMessageCountStore()
+const route = useRoute()
 
 const searchKey = ref()
-const search = () => {}
+const searchList = ref([])
+const handleSearch = () => {
+  if (!searchKey.value) {
+    return
+  }
+  searchList.value = []
+  const regex = new RegExp('(' + searchKey.value + ')', 'gi')
+  chatSessionList.value.forEach((item) => {
+    if (item.contactName.includes(searchKey.value) || item.lastMessage.includes(searchKey.value)) {
+      let newData = Object.assign({}, item)
+      newData.searchContactName = newData.contactName.replace(
+        regex,
+        '<span class="highlight">$1</span>'
+      )
+      newData.searchLastMessage = newData.lastMessage.replace(
+        regex,
+        '<span class="highlight">$1</span>'
+      )
+      searchList.value.push(newData)
+    }
+  })
+}
+const searchClickHandler = (data) => {
+  searchKey.value = ''
+  chatSessionClickHandler(data)
+}
+
 const chatSessionList = ref([])
 const currentChatSession = ref({})
 const messageList = ref([])
@@ -191,6 +228,17 @@ const onLoadSessionData = () => {
   })
 }
 
+const onReloadChatSession = () => {
+  window.electron.ipcRenderer.on(
+    'reloadChatSessionCallback',
+    (e, { contactId, chatSessionList }) => {
+      sortChatSessionList(chatSessionList)
+      chatSessionList.value = chatSessionList
+      sendMessage(contactId)
+    }
+  )
+}
+
 const onLoadChatMessage = () => {
   window.electron.ipcRenderer.on(
     'loadChatMessageCallback',
@@ -217,8 +265,6 @@ const onLoadChatMessage = () => {
     }
   )
 }
-
-const handleSearch = () => {}
 
 // 会话列表排序
 const sortChatSessionList = (dataList) => {
@@ -389,6 +435,26 @@ const showGroupDetail = () => {
   chatGroupDetailRef.value.show(currentChatSession.value.contactId)
 }
 
+const sendMessage = (contactId) => {
+  let curSession = chatSessionList.value.find((item) => item.contactId == contactId)
+  if (!curSession) {
+    window.electron.ipcRenderer.send('reloadChatSession', { contactId })
+    return
+  } else {
+    chatSessionClickHandler(curSession)
+  }
+}
+
+watch(
+  () => route.query.timestamp,
+  (newVal) => {
+    if (newVal && route.query.chatId) {
+      sendMessage(route.query.chatId)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 onMounted(() => {
   onReceiveMessage()
   onLoadSessionData()
@@ -398,6 +464,7 @@ onMounted(() => {
   onLoadChatMessage()
   onAddLocalMessage()
   onLoadContactApply()
+  onReloadChatSession()
 
   setSessionSelected({})
 
@@ -419,6 +486,7 @@ onUnmounted(() => {
   window.electron.ipcRenderer.removeAllListeners('loadChatMessageCallback')
   window.electron.ipcRenderer.removeAllListeners('addLocalCallback')
   window.electron.ipcRenderer.removeAllListeners('loadContactApplyCallback')
+  window.electron.ipcRenderer.removeAllListeners('reloadChatSessionCallback')
 })
 </script>
 

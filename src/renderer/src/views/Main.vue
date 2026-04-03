@@ -42,22 +42,24 @@
     </div>
   </div>
   <WinOp></WinOp>
+  <Update></Update>
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import WinOp from '../components/WinOp.vue'
 const { proxy } = getCurrentInstance()
 const router = useRouter()
+const route = useRoute()
 import { useMessageCountStore } from '@/stores/MessageCountStore'
 const messageCountStore = useMessageCountStore()
 const { messageCount } = storeToRefs(messageCountStore)
-
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'
 import { useSysSettingStore } from '@/stores/SysSettingStore'
+import Update from './Update.vue'
 const userInfoStore = useUserInfoStore()
 const globalInfoStore = useGlobalInfoStore()
 const sysSettingStore = useSysSettingStore()
@@ -107,6 +109,20 @@ const getSysSetting = async () => {
   if (!result) return
   sysSettingStore.setSetting(result.data)
 }
+
+const menuSelect = (path) => {
+  currentMenu.value = menuList.value.find((item) => path.includes(item.path))
+}
+
+watch(
+  () => route.path,
+  (newVal, oldVal) => {
+    if (newVal) {
+      menuSelect(newVal)
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 onMounted(() => {
   getSysSetting()

@@ -23,7 +23,10 @@ import {
   onReLogin,
   onOpenLocalFolder,
   onGetSysSetting,
-  onChangeLocalFolder
+  onChangeLocalFolder,
+  onReloadChatSession,
+  onOpenUrl,
+  onDownloadUpdate
 } from './ipc'
 import { saveWindow } from './windowProxy'
 
@@ -185,6 +188,9 @@ app.whenReady().then(() => {
   onOpenLocalFolder()
   onGetSysSetting()
   onChangeLocalFolder()
+  onReloadChatSession()
+  onOpenUrl()
+  onDownloadUpdate()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

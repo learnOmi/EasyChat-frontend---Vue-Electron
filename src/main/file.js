@@ -251,9 +251,36 @@ expressServer.get('/file', async (req, res) => {
       // 特殊处理头像强制更新
       if (isForceGet && partType === 'avatar') {
         await downLoadFile(fileId, true, localPath + cover_image_suffix, partType)
+        // 验证封面文件是否下载成功
+        const coverExists = await fs.promises
+          .access(localPath + cover_image_suffix)
+          .then(() => true)
+          .catch(() => false)
+
+        if (!coverExists) {
+          console.error('封面文件下载失败:', localPath + cover_image_suffix)
+          return res.status(500).send('封面文件下载失败')
+        }
       }
       // 下载主文件
       await downLoadFile(fileId, isShowCover, localPath, partType)
+      // 验证主文件是否下载成功
+      const mainFileExists = await fs.promises
+        .access(localPath)
+        .then(() => true)
+        .catch(() => false)
+
+      if (!mainFileExists) {
+        console.error('主文件下载失败:', localPath)
+        return res.status(500).send('文件下载失败')
+      }
+
+      // 验证文件大小，确保文件不是空文件
+      const stat = await fs.promises.stat(localPath)
+      if (stat.size === 0) {
+        console.error('下载的文件为空:', localPath)
+        return res.status(500).send('下载的文件为空')
+      }
     }
 
     // 5. 设置通用响应头
@@ -375,6 +402,20 @@ const downLoadFile = async (fileId, showCover, savePath, partType) => {
         partType === 'avatar'
           ? path.join(resourcesPath, '/assets/default.png')
           : path.join(resourcesPath, '/assets/404.png')
+
+      // 检查默认图片是否存在
+      if (!fs.existsSync(defaultImagePath)) {
+        console.error(`默认图片不存在: ${defaultImagePath}`)
+
+        // 清理可能创建的文件流
+        fileStream.close()
+        if (fs.existsSync(savePath)) {
+          fs.unlinkSync(savePath)
+        }
+
+        // 抛出错误，让调用者处理
+        throw new Error(`默认图片不存在: ${defaultImagePath}`)
+      }
 
       sourceStream = fs.createReadStream(defaultImagePath)
     } else {
@@ -502,6 +543,28 @@ const changeLocalFolder = async () => {
   }
 }
 
+const downloadUpdate = async (id, fileName) => {
+  let url = `${store.getData('domain')}/api/update/download`
+  const token = store.getUserData('token')
+  const config = {
+    responseType: 'stream',
+    headers: { 'Content-Type': 'multipart/form-data', token: token },
+    onDownloadProgress(progress) {
+      const loaded = progress.loaded
+      getWindow('main').webContents.send('downloadUpdateCallback', loaded)
+    }
+  }
+  const response = await axios.post(url, { id }, config)
+  const localFile = await getLocalFilePath(null, false, fileName)
+  const stream = fs.createWriteStream(localFile)
+  response.data.pipe(stream)
+  stream.on('finish', async () => {
+    stream.close()
+    const command = `${localFile}`
+    execCommand(command)
+  })
+}
+
 export {
   saveFile2Local,
   startLocalServer,
@@ -509,5 +572,6 @@ export {
   createCover,
   saveAs,
   openLocalFolder,
-  changeLocalFolder
+  changeLocalFolder,
+  downloadUpdate
 }

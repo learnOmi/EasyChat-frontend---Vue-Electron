@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import store from './store'
@@ -9,7 +9,8 @@ import {
   delChatSession,
   topChatSession,
   updateSessionInfo4Message,
-  readAll
+  readAll,
+  updateStatus
 } from './db/ChatSessionUserModel'
 import { saveMessage, selectMessageList, updateMessage } from './db/ChatMessageModel'
 import {
@@ -18,7 +19,8 @@ import {
   saveAs,
   closeLocalServer,
   openLocalFolder,
-  changeLocalFolder
+  changeLocalFolder,
+  downloadUpdate
 } from './file'
 import { getWindow, saveWindow, delWindow } from './windowProxy'
 import icon from '../../resources/icon.png?asset'
@@ -249,6 +251,26 @@ const onChangeLocalFolder = () => {
   })
 }
 
+const onReloadChatSession = () => {
+  ipcMain.on('reloadChatSession', async (e, { contactId }) => {
+    await updateStatus(contactId)
+    const chatSessionList = await selectUserSessionList()
+    e.sender.send('reloadChatSessionCallback', { contactId, chatSessionList })
+  })
+}
+
+const onOpenUrl = () => {
+  ipcMain.on('openUrl', (e, { url }) => {
+    shell.openExternal(url)
+  })
+}
+
+const onDownloadUpdate = () => {
+  ipcMain.on('downloadUpdate', (e, { id, fileName }) => {
+    downloadUpdate(id, fileName)
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -269,5 +291,8 @@ export {
   onReLogin,
   onOpenLocalFolder,
   onGetSysSetting,
-  onChangeLocalFolder
+  onChangeLocalFolder,
+  onReloadChatSession,
+  onOpenUrl,
+  onDownloadUpdate
 }
