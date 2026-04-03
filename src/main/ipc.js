@@ -3,7 +3,12 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import store from './store'
 import { initWs, closeWs } from './wsClient'
-import { addUserSetting, selectSettingInfo, updateContactNoReadCount } from './db/UserSettingModel'
+import {
+  addUserSetting,
+  selectLocalUser,
+  selectSettingInfo,
+  updateContactNoReadCount
+} from './db/UserSettingModel'
 import {
   selectUserSessionList,
   delChatSession,
@@ -125,15 +130,12 @@ const onCreateCover = () => {
 
 const onOpenNewWindow = () => {
   ipcMain.on('openNewWindow', (e, config) => {
-    openWindow(config)
+    openMediaWindow(config)
     //e.sender.send('openNewWindowCallback', config)
   })
 }
 
-const openWindow = ({ windowId, title = 'EasyChat', path, width = 800, height = 600, data }) => {
-  const localServerPort = store.getUserData('localServerPort')
-  data.localServerPort = localServerPort
-
+const openWindowDo = (windowId, title, path, width, height) => {
   let newWindow = getWindow(windowId)
   if (!newWindow) {
     newWindow = new BrowserWindow({
@@ -169,11 +171,64 @@ const openWindow = ({ windowId, title = 'EasyChat', path, width = 800, height = 
     if (NODE_ENV === 'development') {
       newWindow.webContents.openDevTools()
     }
+
     newWindow.on('ready-to-show', () => {
       newWindow.show()
       newWindow.setTitle(title)
     })
 
+    newWindow.on('closed', () => {
+      delWindow(windowId)
+    })
+  }
+  return windowId
+}
+
+const openAdminWindow = ({ windowId, title, path, width, height, data }) => {
+  const localServerPort = store.getUserData('localServerPort')
+  data.localServerPort = localServerPort
+
+  let newWindow = getWindow(windowId)
+  if (newWindow) {
+    newWindow.show()
+    newWindow.setSkipTaskbar(true)
+    newWindow.webContents.send('pageInitData', data)
+  } else {
+    newWindow = getWindow(openWindowDo(windowId, title, path, width, height))
+    // 监听获取数据事件
+    const readyHandler = () => {
+      console.log('Received showAdminReady, sending pageInitData...')
+      newWindow.webContents.send('pageInitData', data)
+      // 发送完毕后，移除本次监听，避免多次触发
+      ipcMain.removeListener('showAdminReady', readyHandler)
+    }
+    ipcMain.on('showAdminReady', readyHandler)
+
+    newWindow.on('closed', () => {
+      // 窗口关闭时，确保移除可能残留的监听器
+      ipcMain.removeListener('showAdminReady', readyHandler)
+    })
+  }
+}
+
+const openMediaWindow = ({
+  windowId,
+  title = 'EasyChat',
+  path,
+  width = 800,
+  height = 600,
+  data
+}) => {
+  const localServerPort = store.getUserData('localServerPort')
+  data.localServerPort = localServerPort
+
+  let newWindow = getWindow(windowId)
+  if (newWindow) {
+    newWindow.show()
+    newWindow.setSkipTaskbar(true)
+    newWindow.webContents.send('pageInitData', data)
+  } else {
+    newWindow = getWindow(openWindowDo(windowId, title, path, width, height))
     // 监听获取数据事件
     const readyHandler = () => {
       console.log('Received showMediaReady, sending pageInitData...')
@@ -184,18 +239,9 @@ const openWindow = ({ windowId, title = 'EasyChat', path, width = 800, height = 
     ipcMain.on('showMediaReady', readyHandler)
 
     newWindow.on('closed', () => {
-      delWindow(windowId)
       // 窗口关闭时，确保移除可能残留的监听器
       ipcMain.removeListener('showMediaReady', readyHandler)
     })
-
-    newWindow.on('closed', () => {
-      delWindow(windowId)
-    })
-  } else {
-    newWindow.show()
-    newWindow.setSkipTaskbar(true)
-    newWindow.webContents.send('pageInitData', data)
   }
 }
 
@@ -271,6 +317,13 @@ const onDownloadUpdate = () => {
   })
 }
 
+const onLoadLocalUser = () => {
+  ipcMain.on('loadLocalUser', async (e) => {
+    const localUser = await selectLocalUser()
+    e.sender.send('loadLocalUserCallback', localUser)
+  })
+}
+
 export {
   onLoginOrRegister,
   onLoginSuccess,
@@ -294,5 +347,7 @@ export {
   onChangeLocalFolder,
   onReloadChatSession,
   onOpenUrl,
-  onDownloadUpdate
+  onDownloadUpdate,
+  onLoadLocalUser,
+  openAdminWindow
 }

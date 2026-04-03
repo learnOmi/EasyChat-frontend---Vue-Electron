@@ -9,16 +9,42 @@
       <el-form ref="formDataRef" :model="formData" label-width="0px" @submit.prevent>
         <!--input输入-->
         <el-form-item prop="email">
-          <el-input
-            v-model.trim="formData.email"
-            size="large"
-            clearable
-            placeholder="请输入邮箱"
-            max-length="30"
-            @focus="clearVerify"
-          >
-            <template #prefix><span class="iconfont icon-youxiang" /></template>
-          </el-input>
+          <div class="email-panel">
+            <el-dropdown v-if="isLogin && localUserList.length > 0" trigger="click">
+              <el-input
+                v-model.trim="formData.email"
+                size="large"
+                clearable
+                placeholder="请输入邮箱"
+                max-length="30"
+                @focus="clearVerify"
+              >
+                <template #prefix><span class="iconfont icon-youxiang" /></template>
+              </el-input>
+              <span class="iconfont icon-a-info-filled"></span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="item in localUserList"
+                    :key="item.email"
+                    @click="selectUser(item)"
+                    >{{ item.email }}</el-dropdown-item
+                  >
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <el-input
+              v-else
+              v-model.trim="formData.email"
+              size="large"
+              clearable
+              placeholder="请输入邮箱"
+              max-length="30"
+              @focus="clearVerify"
+            >
+              <template #prefix><span class="iconfont icon-youxiang" /></template>
+            </el-input>
+          </div>
         </el-form-item>
         <el-form-item v-if="!isLogin" prop="nickName">
           <el-input
@@ -88,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick, onMounted } from 'vue'
+import { ref, reactive, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import md5 from 'js-md5'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useRouter } from 'vue-router'
@@ -110,6 +136,8 @@ const isLogin = ref(true)
 const checkCodeUrl = ref(null)
 // 是否显示加载中
 const showLoading = ref(false)
+
+const localUserList = ref([])
 
 /**
  * 切换登录/注册类型
@@ -261,6 +289,10 @@ const submit = async () => {
   }
 }
 
+const selectUser = (email) => {
+  formData.value.email = email.email
+}
+
 const init = () => {
   window.electron.ipcRenderer.send('setLocalStore', {
     key: 'devWsDomain',
@@ -278,10 +310,18 @@ const init = () => {
     key: 'prodWsDomain',
     value: proxy.Api.prodWsDomain
   })
+  window.electron.ipcRenderer.send('loadLocalUser')
+  window.electron.ipcRenderer.on('loadLocalUserCallback', (e, userList) => {
+    localUserList.value = userList
+  })
 }
 
 onMounted(() => {
   init()
+})
+
+onUnmounted(() => {
+  window.electron.ipcRenderer.removeAllListeners('loadLocalUserCallback')
 })
 </script>
 
@@ -325,7 +365,7 @@ onMounted(() => {
       .input {
         flex: 1;
       }
-      .icon-dom {
+      .icon-a-info-filled {
         margin-left: 3px;
         width: 16px;
         cursor: pointer;

@@ -1,4 +1,4 @@
-import { insertOrIgnore, queryOne, run, update } from './ADB'
+import { insertOrIgnore, queryAll, queryOne, run, update } from './ADB'
 import store from '../store'
 import { startLocalServer } from '../file'
 const os = require('os')
@@ -66,4 +66,15 @@ const updateUserSetting = async (userId, updateData) => {
   await update('user_setting', { updateData }, { userId: userId })
 }
 
-export { updateContactNoReadCount, addUserSetting, selectSettingInfo, updateUserSetting }
+const selectLocalUser = () => {
+  let sql = 'select * from user_setting where email is not null'
+  return queryAll(sql, [])
+}
+
+export {
+  updateContactNoReadCount,
+  addUserSetting,
+  selectSettingInfo,
+  updateUserSetting,
+  selectLocalUser
+}

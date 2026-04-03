@@ -26,7 +26,9 @@ import {
   onChangeLocalFolder,
   onReloadChatSession,
   onOpenUrl,
-  onDownloadUpdate
+  onDownloadUpdate,
+  onLoadLocalUser,
+  openAdminWindow
 } from './ipc'
 import { saveWindow } from './windowProxy'
 
@@ -128,6 +130,21 @@ app.whenReady().then(() => {
     mainWindow.setMaximizable(true)
     mainWindow.setMinimumSize(800, 600)
 
+    if (config.admin) {
+      contextMenu.unshift({
+        label: '管理后台',
+        click: function () {
+          openAdminWindow({
+            windowId: 'admin',
+            title: '管理后台',
+            path: '/admin',
+            width: config.screenWidth * 0.8,
+            height: config.screenHeight * 0.8,
+            data: { token: config.token }
+          })
+        }
+      })
+    }
     contextMenu.unshift({
       label: '用户:' + config.nickName,
       click: () => {}
@@ -180,7 +197,7 @@ app.whenReady().then(() => {
   onUpdateContactNoReadCount()
   onReLogin(() => {
     mainWindow.setResizable(true)
-    mainWindow.setMaximumSize(login_width, login_height)
+    mainWindow.setMinimumSize(login_width, login_height)
     mainWindow.setSize(login_width, login_height)
     mainWindow.setResizable(false)
     mainWindow.center()
@@ -191,6 +208,7 @@ app.whenReady().then(() => {
   onReloadChatSession()
   onOpenUrl()
   onDownloadUpdate()
+  onLoadLocalUser()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
