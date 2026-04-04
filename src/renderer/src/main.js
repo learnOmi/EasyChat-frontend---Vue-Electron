@@ -22,6 +22,7 @@ import Avatar from '@/components/Avatar.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import Confirm from '@/utils/Confirm'
 import Badge from '@/components/Badge.vue'
+import Table from '@/components/Table.vue'
 
 // 动态设置 Content Security Policy
 const setCSP = () => {
@@ -70,6 +71,7 @@ app.component('BaseDialog', BaseDialog)
 app.component('Avatar', Avatar)
 app.component('AvatarUpload', AvatarUpload)
 app.component('Badge', Badge)
+app.component('MyTable', Table)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Request = Request

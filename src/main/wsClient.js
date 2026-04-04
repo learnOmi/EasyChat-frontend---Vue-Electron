@@ -43,6 +43,7 @@ const createWs = () => {
     const messageType = message.messageType
     const sessionInfo = {}
     let dbSessionInfo = {}
+    const leaveGroupUserId = message.extendData
 
     switch (messageType) {
       // ws连接成功
@@ -95,6 +96,9 @@ const createWs = () => {
         await saveMessage(message)
         dbSessionInfo = await selectUserSessionByContactId(message.contactId)
         message.extendData = dbSessionInfo
+        if (messageType == 11 && leaveGroupUserId == store.getUserId()) {
+          break
+        }
         sender.send('receiveMessage', message)
         break
 

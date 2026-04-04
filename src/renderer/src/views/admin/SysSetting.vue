@@ -1,0 +1,150 @@
+<template>
+  <div class="form-panel">
+    <el-form ref="formDataRef" :model="formData" :rules="rules" label-width="160px" @submit.prevent>
+      <el-form-item label="最多可创建群组数" prop="maxGroupCount">
+        <el-input
+          v-model.trim="formData.maxGroupCount"
+          clearable
+          placeholder="请输每人入最多可创建群组数"
+        ></el-input>
+      </el-form-item>
+      <el-form-item label="群组最大成员数" prop="maxGroupMemberCount">
+        <el-input
+          v-model.trim="formData.maxGroupMemberCount"
+          clearable
+          placeholder="请输入群组最大成员数"
+        ></el-input>
+      </el-form-item>
+      <el-form-item label="图片大小" prop="maxImageSize">
+        <el-input
+          v-model.trim="formData.maxImageSize"
+          clearable
+          placeholder="请输入允许上传的图片大小"
+        >
+          <template #append>MB</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="视频大小" prop="maxVideoSize">
+        <el-input
+          v-model.trim="formData.maxVideoSize"
+          clearable
+          placeholder="请输入允许上传的视频大小"
+        >
+          <template #append>MB</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="文件大小" prop="maxFileSize">
+        <el-input
+          v-model.trim="formData.maxFileSize"
+          clearable
+          placeholder="请输入允许上传的文件大小"
+        >
+          <template #append>MB</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="机器人昵称" prop="robotNickName">
+        <el-input
+          v-model.trim="formData.robotNickName"
+          clearable
+          placeholder="请输入机器人昵称"
+          maxlength="20"
+        ></el-input>
+      </el-form-item>
+      <el-form-item label="机器人头像" prop="robotFile">
+        <AvatarUpload v-model="formData.robotFile" @cover-file="saveCover" />
+      </el-form-item>
+      <el-form-item label="欢迎消息" prop="robotWelcome">
+        <el-input
+          v-model.trim="formData.robotWelcome"
+          clearable
+          placeholder="请输入欢迎消息"
+          type="textarea"
+          rows="5"
+          maxlength="300"
+          :show-word-limit="true"
+          resize="none"
+        ></el-input>
+      </el-form-item>
+      <el-form-item label="">
+        <el-button type="primary" @click="saveSysSetting">保存设置</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+const { proxy } = getCurrentInstance()
+import AvatarUpload from '@/components/AvatarUpload.vue'
+
+const formData = ref({})
+const formDataRef = ref()
+
+const rules = {
+  maxGroupCount: [
+    { required: true, message: '请输入最多可创建群组数', trigger: 'blur' },
+    { validator: proxy.Verify.number, message: '只能是数字' }
+  ],
+  maxGroupMemberCount: [
+    { required: true, message: '请输入群组最大成员数', trigger: 'blur' },
+    { validator: proxy.Verify.number, message: '只能是数字' }
+  ],
+  maxImageSize: [
+    { required: true, message: '请输入允许上传的图片大小', trigger: 'blur' },
+    { validator: proxy.Verify.number, message: '只能是数字' }
+  ],
+  maxVideoSize: [
+    { required: true, message: '请输入允许上传的视频大小', trigger: 'blur' },
+    { validator: proxy.Verify.number, message: '只能是数字' }
+  ],
+  maxFileSize: [
+    { required: true, message: '请输入允许上传的文件大小', trigger: 'blur' },
+    { validator: proxy.Verify.number, message: '只能是数字' }
+  ],
+  robotNickName: [{ required: true, message: '请输入机器人昵称', trigger: 'blur' }],
+  robotFile: [{ required: true, message: '请上传机器人头像', trigger: 'blur' }],
+  robotWelcome: [{ required: true, message: '请输入欢迎消息', trigger: 'blur' }]
+}
+
+const saveCover = ({ avatarFile, coverFile }) => {
+  formData.value.robotFile = avatarFile
+  formData.value.robotCover = coverFile
+}
+
+const getSysSetting = async () => {
+  let result = await proxy.Request({
+    url: proxy.Api.getSysSetting4Admin
+  })
+  if (!result) {
+    return
+  }
+  formData.value = result.data
+  formData.value.robotFile = result.data.robotUid
+}
+
+getSysSetting()
+
+const saveSysSetting = () => {
+  formDataRef.value.validate(async (valid) => {
+    if (!valid) {
+      return
+    }
+    let params = {}
+    Object.assign(params, formData.value)
+    let result = await proxy.Request({
+      url: proxy.Api.saveSysSetting,
+      params
+    })
+    if (!result) {
+      return
+    }
+    proxy.Message.success('保存成功')
+  })
+}
+</script>
+
+<style lang="scss" scoped>
+.form-panel {
+  width: 500px;
+}
+</style>

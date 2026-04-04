@@ -35,7 +35,8 @@
     </div>
     <div class="right-container">
       <router-view v-slot="{ Component }">
-        <keep-alive include="chat">
+        <!-- keep alive 需配合组件名称使用 -->
+        <keep-alive include="Chat">
           <component :is="Component" ref="componentRef" />
         </keep-alive>
       </router-view>

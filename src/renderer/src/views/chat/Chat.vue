@@ -186,6 +186,7 @@ const onReceiveMessage = () => {
         },
         showCancelBtn: false
       })
+      return
     }
 
     if (message.messageType == 10) {
@@ -321,6 +322,7 @@ const setTop = (data) => {
 
 const delChatSession = (contactId) => {
   delChatSessionList(contactId)
+  setSessionSelected({})
   currentChatSession.value = {}
   // TODO 设置选中的会话
   window.electron.ipcRenderer.send('delChatSession', contactId)
@@ -444,6 +446,11 @@ const sendMessage = (contactId) => {
     chatSessionClickHandler(curSession)
   }
 }
+
+// 定义组件名称
+defineOptions({
+  name: 'Chat'
+})
 
 watch(
   () => route.query.timestamp,
