@@ -35,6 +35,7 @@ const createWs = () => {
   ws.onopen = () => {
     ws.send('heart beat')
     maxReConnectTimes = 5
+    lockReconnect = false
   }
 
   ws.onmessage = async (e) => {
@@ -147,8 +148,8 @@ const createWs = () => {
     if (maxReConnectTimes > 0) {
       maxReConnectTimes--
       setTimeout(() => {
+        if (!needReconnect) return
         createWs()
-        lockReconnect = false
       }, 5000)
     } else {
       console.log('连接超时')
