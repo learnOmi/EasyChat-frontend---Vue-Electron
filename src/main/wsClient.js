@@ -16,6 +16,27 @@ let wsUrl = null
 let sender = null
 let needReconnect = null
 let lockReconnect = false
+let heartbeatTimer = null
+let heartbeatTimeout = null
+
+const resetHeartbeatTimeout = () => {
+  if (heartbeatTimeout) clearTimeout(heartbeatTimeout)
+  heartbeatTimeout = setTimeout(() => {
+    console.log('心跳超时，连接可能已断开')
+    ws.terminate()
+  }, 10000)
+}
+
+const clearAllTimers = () => {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
+  }
+  if (heartbeatTimeout) {
+    clearTimeout(heartbeatTimeout)
+    heartbeatTimeout = null
+  }
+}
 
 const initWs = (config, _sender) => {
   wsUrl = `${NODE_ENV !== 'development' ? store.getData('prodWsDomain') : store.getData('devWsDomain')}?token=${config.token}`
@@ -30,16 +51,27 @@ const createWs = () => {
     return
   }
 
+  clearAllTimers() // ← 重连前先清旧定时器
+
   ws = new WebSocket(wsUrl)
 
   ws.onopen = () => {
     ws.send('heart beat')
     maxReConnectTimes = 5
     lockReconnect = false
+
+    heartbeatTimer = setInterval(() => {
+      if (ws != null && ws.readyState === 1) {
+        ws.send('heart beat')
+        resetHeartbeatTimeout()
+      }
+    }, 5000)
   }
 
   ws.onmessage = async (e) => {
     console.log('收到服务器消息', e.data)
+    resetHeartbeatTimeout() // ← 收到消息就重置超时
+
     const message = JSON.parse(e.data)
     const messageType = message.messageType
     const sessionInfo = {}
@@ -155,16 +187,11 @@ const createWs = () => {
       console.log('连接超时')
     }
   }
-
-  setInterval(() => {
-    if (ws != null && ws.readyState === 1) {
-      ws.send('heart beat')
-    }
-  }, 5000)
 }
 
 const closeWs = () => {
   needReconnect = false
+  clearAllTimers()
   ws.close()
 }
 
