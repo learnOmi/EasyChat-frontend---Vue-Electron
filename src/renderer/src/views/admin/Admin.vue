@@ -29,7 +29,7 @@ import { useRoute } from 'vue-router'
 import WinOp from '@/components/WinOp.vue'
 const route = useRoute()
 const { proxy } = getCurrentInstance()
-import { useGlobalInfoStore } from '@/store/GlobalInfoStore'
+import { useGlobalInfoStore } from '@/stores/GlobalInfoStore'
 const globalInfoStore = useGlobalInfoStore()
 
 const menuList = ref([

@@ -96,6 +96,7 @@ import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useSysSettingStore } from '@/stores/SysSettingStore'
 import { getFileType, getFileTypeByName } from '@/utils/Constants'
+import crypto from 'crypto'
 const userInfoStore = useUserInfoStore()
 const sysSettingStore = useSysSettingStore()
 const { proxy } = getCurrentInstance()
@@ -210,6 +211,7 @@ const sendMessageDo = async (messageObj, cleanMsgContent) => {
   }
   messageObj.sessionId = props.currentChatSession.sessionId
   messageObj.sendUserId = userInfoStore.getUserInfo().userId
+  messageObj.clientMessageId = crypto.randomUUID()
 
   let result = await proxy.Request({
     url: proxy.Api.sendMessage,
@@ -220,7 +222,8 @@ const sendMessageDo = async (messageObj, cleanMsgContent) => {
       messageType,
       fileSize,
       fileName,
-      fileType
+      fileType,
+      clientMessageId: messageObj.clientMessageId
     },
     showError: false,
     errorCallback: (responseData) => {

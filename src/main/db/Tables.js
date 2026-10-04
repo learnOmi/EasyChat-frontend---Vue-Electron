@@ -48,6 +48,11 @@ const alter_tables = [
     alter_sql: 'alter table user_setting add column email varchar'
   }
   */
+  {
+    table_name: 'chat_message',
+    field: 'client_message_id',
+    alter_sql: 'alter table chat_message add column client_message_id varchar'
+  }
 ]
 
 const add_index = [
