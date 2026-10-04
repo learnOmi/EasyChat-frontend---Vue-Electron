@@ -5,7 +5,7 @@ import {
   saveOrUpdate4Message,
   selectUserSessionByContactId
 } from './db/ChatSessionUserModel'
-import { saveMessageBatch, saveMessage, updateMessage } from './db/ChatMessageModel'
+import { saveMessageBatch, saveMessage, updateMessage, updateStatusAsc } from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
 import { updateGroupName } from './db/ChatSessionUserModel'
 const NODE_ENV = process.env.NODE_ENV
@@ -77,6 +77,7 @@ const createWs = () => {
     const sessionInfo = {}
     let dbSessionInfo = {}
     const leaveGroupUserId = message.extendData
+    const sentMessageStatusList = message.extendData.sentMessageStatusList || []
 
     switch (messageType) {
       // ws连接成功
@@ -85,6 +86,17 @@ const createWs = () => {
         await saveOrUpdateChatSessionBatch4Init(message.extendData.chatSessionList)
         // 保存消息
         await saveMessageBatch(message.extendData.chatMessageList)
+        ( message.extendData.chatMessageList || [] ).forEach(sendAck)
+        // 回补「我发出的消息」的送达状态：离线期间被对方 ACK 的消息，服务端推送不到，重连时随 INIT 带回
+        for (const item of sentMessageStatusList) {
+          await updateMessage({ status: item.status }, { messageId: item.messageId })
+          // 通知渲染进程就地更新内存里的消息状态（复用 messageType=15 的分支）
+          sender.send('receiveMessage', {
+            messageType: 15,
+            messageId: item.messageId,
+            status: item.status
+          })
+        }
         // 更新联系人申请数
         await updateContactNoReadCount({
           userId: store.getUserId(),
@@ -127,6 +139,9 @@ const createWs = () => {
         }
         await saveOrUpdate4Message(store.getUserData('currentSessionId'), sessionInfo)
         await saveMessage(message)
+        if (messageType == 2 || messageType == 5) {
+          sendAck(message)
+        }
         dbSessionInfo = await selectUserSessionByContactId(message.contactId)
         message.extendData = dbSessionInfo
         if (messageType == 11 && leaveGroupUserId == store.getUserId()) {
@@ -137,7 +152,8 @@ const createWs = () => {
 
       // 文件上传完成
       case 6:
-        updateMessage({ status: message.status }, { messageId: message.messageId })
+        // 只增不减：仅在本地状态低于目标状态时推进，避免把已送达(2)覆盖回已发送(1)
+        updateStatusAsc(message.messageId, message.status)
         sender.send('receiveMessage', message)
         break
 
@@ -150,6 +166,11 @@ const createWs = () => {
       // 修改群昵称
       case 10:
         updateGroupName(message.contactId, message.extendData)
+        sender.send('receiveMessage', message)
+        break
+
+      case 15:
+        updateMessage({ status: message.status }, { messageId: message.messageId })
         sender.send('receiveMessage', message)
         break
     }
@@ -193,6 +214,18 @@ const closeWs = () => {
   needReconnect = false
   clearAllTimers()
   ws.close()
+}
+
+const sendAck = (message) => {
+  if (!message || message.sendUserId === store.getUserId()) return
+  if (message.messageType !== 2 && message.messageType !== 5) return
+  if (ws == null || ws.readyState !== 1) return
+  ws.send(
+    JSON.stringify({
+      messageType: 14,
+      messageId: message.messageId
+    })
+  )
 }
 
 export { initWs, closeWs }

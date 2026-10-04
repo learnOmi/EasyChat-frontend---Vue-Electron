@@ -1,4 +1,4 @@
-import { insertOrReplace, queryCount, queryAll, update, queryOne } from './ADB'
+import { insertOrReplace, queryCount, queryAll, update, queryOne, run } from './ADB'
 import store from '../store'
 import { updateNoReadCount } from './ChatSessionUserModel'
 
@@ -72,4 +72,25 @@ const updateMessage = (data, paramData) => {
   return update('chat_message', data, paramData)
 }
 
-export { saveMessage, saveMessageBatch, selectMessageList, updateMessage, selectByMessageId }
+/**
+ * 只增不减地推进消息状态（幂等保护）
+ * 仅当本地库中 status 小于目标状态时才更新，防止「文件上传完成」等延迟/重放帧
+ * 把已送达(2)覆盖回已发送(1)。通用的 update 只能拼等值条件，写不出 status < ?，故走原生 SQL。
+ * @param {number} messageId 消息ID
+ * @param {number} status 目标状态
+ * @returns {Promise<number>} 影响行数，0 表示状态未低于目标值、无需更新
+ */
+const updateStatusAsc = (messageId, status) => {
+  const sql =
+    'update chat_message set status = ? where message_id = ? and user_id = ? and status < ?'
+  return run(sql, [status, messageId, store.getUserId(), status])
+}
+
+export {
+  saveMessage,
+  saveMessageBatch,
+  selectMessageList,
+  updateMessage,
+  selectByMessageId,
+  updateStatusAsc
+}

@@ -173,7 +173,8 @@ const onReceiveMessage = () => {
     if (message.messageType == 6) {
       const localMessage = messageList.value.find((item) => item.messageId == message.messageId)
       if (localMessage != null) {
-        localMessage.status = 1
+        // 只增不减：文件上传完成只负责把「发送中」推进到「已发送」，不得覆盖已送达(2)
+        localMessage.status = Math.max(localMessage.status ?? 0, message.status)
       }
       return
     }
@@ -192,6 +193,14 @@ const onReceiveMessage = () => {
     if (message.messageType == 10) {
       let curSession = chatSessionList.value.find((item) => item.contactId == message.contactId)
       curSession.contactName = message.extendData
+      return
+    }
+
+    if (message.messageType == 15) {
+      const localMessage = messageList.value.find((item) => item.messageId == message.messageId)
+      if (localMessage != null) {
+        localMessage.status = Math.max(localMessage.status, message.status) // 2 = 已送达
+      }
       return
     }
 
