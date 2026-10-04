@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, Tray, Menu } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu, dialog } from 'electron'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -31,6 +31,7 @@ import {
   openAdminWindow
 } from './ipc'
 import { saveWindow } from './windowProxy'
+import { init as initLocalDb } from './db/ADB'
 
 const login_width = 300
 const login_height = 370
@@ -101,7 +102,23 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // 本地数据库必须先初始化完成（建表 + 补列 + 列名映射），再创建窗口、注册 IPC。
+  // 失败就直接退出，不让应用带着空的 globalColumnsMap 继续跑：
+  // 那样所有写库操作都会报 "Cannot read properties of undefined"，
+  // 把「建表失败」这个真正的原因埋在一堆看似无关的报错里。
+  try {
+    await initLocalDb()
+  } catch (error) {
+    console.error('本地数据库初始化失败，应用退出:', error)
+    dialog.showErrorBox(
+      '本地数据库初始化失败',
+      `本地数据初始化失败，程序无法启动。\n\n${(error && error.message) || error}`
+    )
+    app.quit()
+    return
+  }
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -215,6 +232,11 @@ app.whenReady().then(() => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+}).catch((error) => {
+  // 启动流程中任何未捕获的异常都在这里收口，避免静默失败后应用带病运行
+  console.error('主进程启动失败:', error)
+  dialog.showErrorBox('启动失败', `程序启动失败。\n\n${(error && error.message) || error}`)
+  app.quit()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

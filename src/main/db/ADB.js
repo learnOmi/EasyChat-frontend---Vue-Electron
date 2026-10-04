@@ -31,7 +31,10 @@ const createTable = async () => {
     // 顺序执行修改表操作（因为需要先查询再修改）
     for (const item of alter_tables) {
       try {
-        const filedList = await queryAll(`PRAGMA table_info(${item.tableName})`, [])
+        // 注意：alter_tables 的配置项用的是下划线命名 table_name（见 Tables.js），
+        // 不能写成 item.tableName——那样表名是 undefined，PRAGMA 查不到列，
+        // 会误判「字段不存在」而无脑执行 ALTER，第二次启动就报 duplicate column name。
+        const filedList = await queryAll(`PRAGMA table_info(${item.table_name})`, [])
         const field = filedList.some((row) => row.name === item.field)
         if (!field) {
           await new Promise((resolve, reject) => {
@@ -42,7 +45,7 @@ const createTable = async () => {
           })
         }
       } catch (error) {
-        console.error(`修改表 ${item.tableName} 失败:`, error)
+        console.error(`修改表 ${item.table_name} 失败:`, error)
         throw error
       }
     }
@@ -247,16 +250,33 @@ const toLowerCamelCase = (str) => {
   })
 }
 
+/**
+ * 初始化本地数据库：建表 → 补列 → 建立列名映射。
+ *
+ * 注意两点：
+ * 1. 不再在模块加载时自动执行，改由主进程入口在创建窗口前 await。
+ *    这样初始化失败能被捕获并向上暴露，应用不会带着空的 globalColumnsMap 继续运行
+ *    （否则后续所有写库操作都会抛 "Cannot read properties of undefined"，
+ *    把真正的原因埋在一堆看似无关的报错里）。
+ * 2. 返回 Promise，初始化失败时 reject，调用方必须处理。
+ *
+ * @returns {Promise<void>}
+ */
 const init = () => {
-  // 确保传入其中的回调函数里的数据库操作按照顺序串行执行。
-  // 即使回调内部包含异步操作，serialize 也会保证前一个语句执行完毕后再执行下一个，
-  // 防止并发写入导致的数据竞争或锁死问题。
-  db.serialize(async () => {
-    await createTable()
-    await initTableColumnsMap()
+  return new Promise((resolve, reject) => {
+    // 确保传入其中的回调函数里的数据库操作按照顺序串行执行。
+    // 即使回调内部包含异步操作，serialize 也会保证前一个语句执行完毕后再执行下一个，
+    // 防止并发写入导致的数据竞争或锁死问题。
+    db.serialize(async () => {
+      try {
+        await createTable()
+        await initTableColumnsMap()
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
   })
 }
 
-init()
-
-export { run, queryAll, queryCount, queryOne, insert, insertOrReplace, insertOrIgnore, update }
+export { run, queryAll, queryCount, queryOne, insert, insertOrReplace, insertOrIgnore, update, init }

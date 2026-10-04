@@ -96,7 +96,9 @@ import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
 import { useUserInfoStore } from '@/stores/UserInfoStore'
 import { useSysSettingStore } from '@/stores/SysSettingStore'
 import { getFileType, getFileTypeByName } from '@/utils/Constants'
-import crypto from 'crypto'
+// 注意：不要在这里 import Node 内置的 crypto 模块。渲染进程跑的是浏览器环境，
+// Vite 打包时解析不到 Node 内置模块，会报 "Failed to resolve entry for package crypto"。
+// 生成 UUID 直接用浏览器全局的 Web Crypto 即可（crypto.randomUUID()，见下方 clientMessageId）。
 const userInfoStore = useUserInfoStore()
 const sysSettingStore = useSysSettingStore()
 const { proxy } = getCurrentInstance()

@@ -19,12 +19,17 @@ let lockReconnect = false
 let heartbeatTimer = null
 let heartbeatTimeout = null
 
+// 心跳间隔：与服务端 Constants.WS_HEART_BEAT_INTERVAL_SECONDS 保持一致（5 秒）
+const HEARTBEAT_INTERVAL = 5000
+// 心跳看门狗超时：取心跳间隔的 3 倍，可容忍连续 2 次下行应答丢失后才判定断链
+const HEARTBEAT_TIMEOUT = HEARTBEAT_INTERVAL * 3
+
 const resetHeartbeatTimeout = () => {
   if (heartbeatTimeout) clearTimeout(heartbeatTimeout)
   heartbeatTimeout = setTimeout(() => {
     console.log('心跳超时，连接可能已断开')
     ws.terminate()
-  }, 10000)
+  }, HEARTBEAT_TIMEOUT)
 }
 
 const clearAllTimers = () => {
@@ -57,27 +62,38 @@ const createWs = () => {
 
   ws.onopen = () => {
     ws.send('heart beat')
+    // 立即启动看门狗：若只依赖下行帧来首次启动，链路上行通、下行不通（半开）时永远收不到帧、也就永远不触发超时
+    resetHeartbeatTimeout()
     maxReConnectTimes = 5
     lockReconnect = false
 
     heartbeatTimer = setInterval(() => {
       if (ws != null && ws.readyState === 1) {
         ws.send('heart beat')
-        resetHeartbeatTimeout()
+        // 这里绝不能调用 resetHeartbeatTimeout()：看门狗必须只由「收到下行帧」来重置。
+        // 若在此处重置，等于自己给自己续命，无论对端是否存活都会每 5 秒重置一次，看门狗彻底失效（原实现的 bug）。
       }
-    }, 5000)
+    }, HEARTBEAT_INTERVAL)
   }
 
   ws.onmessage = async (e) => {
-    console.log('收到服务器消息', e.data)
-    resetHeartbeatTimeout() // ← 收到消息就重置超时
+    // 任何下行帧（含服务端的心跳应答「heart」）都证明链路存活，重置看门狗
+    resetHeartbeatTimeout()
 
-    const message = JSON.parse(e.data)
+    let message
+    try {
+      message = JSON.parse(e.data)
+    } catch (err) {
+      // 服务端心跳应答是纯文本「heart」，不是 JSON；其它非 JSON 脏数据同样在此丢弃。
+      // 不能把解析异常抛出去，否则会中断 onmessage，连日志和后续处理都做不了（原实现会直接抛错）。
+      return
+    }
+    console.log('收到服务器消息', e.data)
     const messageType = message.messageType
     const sessionInfo = {}
     let dbSessionInfo = {}
     const leaveGroupUserId = message.extendData
-    const sentMessageStatusList = message.extendData.sentMessageStatusList || []
+    const sentMessageStatusList = (message.extendData || {}).sentMessageStatusList || []
 
     switch (messageType) {
       // ws连接成功
@@ -85,11 +101,15 @@ const createWs = () => {
         // 保存会话信息
         await saveOrUpdateChatSessionBatch4Init(message.extendData.chatSessionList)
         // 保存消息
-        await saveMessageBatch(message.extendData.chatMessageList)
-        ( message.extendData.chatMessageList || [] ).forEach(sendAck)
+        // 注意：下面不能直接写 `await saveMessageBatch(...)` 然后另起一行以 `(` 开头，
+        // JS 的 ASI 不会在 `(` 前补分号，两行会被解析成 saveMessageBatch(x)(y)——即把返回值当函数再调一次。
+        const chatMessageList = message.extendData.chatMessageList || []
+        await saveMessageBatch(chatMessageList)
+        chatMessageList.forEach(sendAck)
         // 回补「我发出的消息」的送达状态：离线期间被对方 ACK 的消息，服务端推送不到，重连时随 INIT 带回
         for (const item of sentMessageStatusList) {
-          await updateMessage({ status: item.status }, { messageId: item.messageId })
+          // 只增不减：仅在本地状态低于目标状态时推进，避免把已送达(2)覆盖回已发送(1)
+          await updateStatusAsc(item.messageId, item.status)
           // 通知渲染进程就地更新内存里的消息状态（复用 messageType=15 的分支）
           sender.send('receiveMessage', {
             messageType: 15,
