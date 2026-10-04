@@ -98,16 +98,42 @@ const initTableColumnsMap = async () => {
 }
 
 /**
+ * 构造带上下文的数据库异常，便于定位是「哪条 SQL、什么参数」出错。
+ *
+ * 之所以不再像以前那样静默 resolve 一个空值（[] / {} / 0 / 失败字符串），
+ * 是因为静默兜底会把「SQL 写错、表不存在、列不存在」这类致命错误，
+ * 伪装成「查无数据」继续往下跑，真正的原因要到很远的地方才炸出来，
+ * 排查时需要在整条调用链上反推。统一 reject 让错误在源头可见。
+ *
+ * @param {string} action 操作名（queryAll/queryOne/queryCount/run）
+ * @param {string} sql 出错的 SQL
+ * @param {Array} params SQL 参数
+ * @param {Error} cause 底层原始错误
+ * @returns {Error} 带上下文的新异常
+ */
+const createDbError = (action, sql, params, cause) => {
+  const error = new Error(`[${action}] 数据库操作失败: ${cause && cause.message}`)
+  error.sql = sql
+  error.params = params
+  error.cause = cause
+  return error
+}
+
+/**
  * 执行 SQL 查询并返回所有结果
  * @param {string} sql - 要执行的 SQL 查询语句
  * @param {Array} params - SQL 查询参数数组
  * @returns {Promise<Array>} 返回包含查询结果的 Promise，结果已转换为驼峰命名格式
+ * @throws {Error} SQL 执行失败时 reject（带 sql/params 上下文）
  */
 const queryAll = (sql, params) => {
   return new Promise((resolve, reject) => {
     const stmt = db.prepare(sql)
     stmt.all(params, function (err, row) {
-      if (err) resolve([])
+      if (err) {
+        reject(createDbError('queryAll', sql, params, err))
+        return
+      }
       row.forEach((item, index) => {
         row[index] = convertDbObj2BizObj(item)
       })
@@ -122,13 +148,14 @@ const queryAll = (sql, params) => {
  * @param {string} sql - 要执行的 SQL 查询语句
  * @param {Array} params - SQL 查询参数数组
  * @returns {Promise<number>} 返回包含计数结果的 Promise
+ * @throws {Error} SQL 执行失败时 reject（带 sql/params 上下文）
  */
 const queryCount = (sql, params) => {
   return new Promise((resolve, reject) => {
     const stmt = db.prepare(sql)
     stmt.get(params, function (err, row) {
       if (err) {
-        resolve(0)
+        reject(createDbError('queryCount', sql, params, err))
         return
       }
       resolve(Array.from(Object.values(row))[0])
@@ -142,12 +169,16 @@ const queryCount = (sql, params) => {
  * @param {string} sql - 要执行的 SQL 查询语句
  * @param {Array} params - SQL 查询参数数组
  * @returns {Promise<Object>} 返回包含查询结果的 Promise，结果已转换为驼峰命名格式
+ * @throws {Error} SQL 执行失败时 reject（带 sql/params 上下文）
  */
 const queryOne = (sql, params) => {
   return new Promise((resolve, reject) => {
     const stmt = db.prepare(sql)
     stmt.get(params, function (err, row) {
-      if (err) resolve({})
+      if (err) {
+        reject(createDbError('queryOne', sql, params, err))
+        return
+      }
       resolve(convertDbObj2BizObj(row))
       console.log(`执行的sql:${sql}, params:${params}, row:${JSON.stringify(row)}`)
     })
@@ -222,16 +253,22 @@ const update = (tableName, data, paramData) => {
  * @param {string} sql - 要执行的 SQL 语句
  * @param {Array} params - SQL 语句参数数组
  * @returns {Promise<number>} 返回 Promise，解析为影响的行数
+ * @throws {Error} SQL 执行失败时 reject（带 sql/params 上下文）
  */
 const run = (sql, params) => {
   return new Promise((resolve, reject) => {
     const stmt = db.prepare(sql)
     stmt.run(params, function (err) {
-      if (err) resolve('操作数据库失败！')
+      if (err) {
+        reject(createDbError('run', sql, params, err))
+        return
+      }
       console.log(`执行的sql:${sql}, params:${params}, 执行记录数:${this.changes}`)
       resolve(this.changes)
     })
-    stmt.finalize
+    // 注意这里必须带括号调用：原来的 `stmt.finalize`（无括号）只是一次属性读取，
+    // 语句永远不会被释放，属于连接内的资源泄漏。
+    stmt.finalize()
   })
 }
 
@@ -279,4 +316,14 @@ const init = () => {
   })
 }
 
-export { run, queryAll, queryCount, queryOne, insert, insertOrReplace, insertOrIgnore, update, init }
+export {
+  run,
+  queryAll,
+  queryCount,
+  queryOne,
+  insert,
+  insertOrReplace,
+  insertOrIgnore,
+  update,
+  init
+}

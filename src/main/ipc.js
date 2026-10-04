@@ -31,6 +31,28 @@ import { getWindow, saveWindow, delWindow } from './windowProxy'
 import icon from '../../resources/icon.png?asset'
 const NODE_ENV = process.env.NODE_ENV
 
+/**
+ * 注册一个「异常安全」的 IPC 监听器。
+ *
+ * ipcMain.on 的回调没有调用方 await，只要监听器里出现未捕获异常（无论是同步 throw，
+ * 还是 async 函数返回的 rejected Promise），就会变成 unhandled rejection：
+ * Node 只打一行警告，渲染进程那边则永远等不到回调，表现为界面卡住。
+ * 这里统一在边界收口——用 Promise.resolve().then() 把同步/异步两种失败收敛到同一个
+ * catch，带上事件名打日志，避免异常逃逸成 unhandled rejection。
+ *
+ * @param {string} channel IPC 事件名
+ * @param {(e: Electron.IpcMainEvent, ...args: any[]) => any} listener 业务监听器，可为 async
+ */
+const onSafe = (channel, listener) => {
+  ipcMain.on(channel, (e, ...args) => {
+    Promise.resolve()
+      .then(() => listener(e, ...args))
+      .catch((error) => {
+        console.error(`处理 IPC 事件 ${channel} 失败:`, error)
+      })
+  })
+}
+
 const onLoginOrRegister = (callback) => {
   // 监听登陆或注册
   ipcMain.on('loginOrRegister', (e, isLogin) => {
@@ -39,10 +61,12 @@ const onLoginOrRegister = (callback) => {
 }
 
 const onLoginSuccess = (callback) => {
-  ipcMain.on('openChat', (e, config) => {
+  onSafe('openChat', async (e, config) => {
     store.initUserId(config.userId)
     store.setUserData('token', config.token)
-    addUserSetting(config.userId, config.email)
+    // 必须 await：写库失败在这里就暴露（由 onSafe 记录），否则会变成后台的 unhandled rejection，
+    // 而且后续 initWs 会在「用户设置没写成功」的状态下继续跑。
+    await addUserSetting(config.userId, config.email)
     callback(config)
     initWs(config, e.sender)
   })
@@ -67,36 +91,36 @@ const onGetLocalStore = () => {
 }
 
 const onLoadSessionData = () => {
-  ipcMain.on('loadSessionData', async (e) => {
+  onSafe('loadSessionData', async (e) => {
     const dataList = await selectUserSessionList()
     e.sender.send('loadSessionDataCallback', dataList)
   })
 }
 
 const onDelChatSession = () => {
-  ipcMain.on('delChatSession', (e, contactId) => {
-    delChatSession(contactId)
+  onSafe('delChatSession', async (e, contactId) => {
+    await delChatSession(contactId)
   })
 }
 
 const onTopChatSession = () => {
-  ipcMain.on('topChatSession', (e, { contactId, topType }) => {
-    topChatSession(contactId, topType)
+  onSafe('topChatSession', async (e, { contactId, topType }) => {
+    await topChatSession(contactId, topType)
   })
 }
 
 const onLoadChatMessage = () => {
-  ipcMain.on('loadChatMessage', async (e, data) => {
+  onSafe('loadChatMessage', async (e, data) => {
     const result = await selectMessageList(data)
     e.sender.send('loadChatMessageCallback', result)
   })
 }
 
 const onSetSessionSelected = () => {
-  ipcMain.on('setSessionSelected', (e, { contactId, sessionId }) => {
+  onSafe('setSessionSelected', async (e, { contactId, sessionId }) => {
     if (sessionId) {
       store.setUserData('currentSessionId', sessionId)
-      readAll(contactId)
+      await readAll(contactId)
     } else {
       store.deleteUserData('currentSessionId')
     }
@@ -104,7 +128,7 @@ const onSetSessionSelected = () => {
 }
 
 const onAddLocalMessage = () => {
-  ipcMain.on('addLocalMessage', async (e, data) => {
+  onSafe('addLocalMessage', async (e, data) => {
     await saveMessage(data)
     if (data.messageType === 5) {
       // 保存图片到本地；上传到服务器；生成缩略图
@@ -122,7 +146,7 @@ const onAddLocalMessage = () => {
 }
 
 const onCreateCover = () => {
-  ipcMain.on('createCover', async (e, fileBuffer) => {
+  onSafe('createCover', async (e, fileBuffer) => {
     const stream = await createCover(fileBuffer)
     e.sender.send('createCoverCallback', stream)
   })
@@ -246,13 +270,13 @@ const openMediaWindow = ({
 }
 
 const onSaveAs = () => {
-  ipcMain.on('saveAs', (e, data) => {
-    saveAs(data)
+  onSafe('saveAs', async (e, data) => {
+    await saveAs(data)
   })
 }
 
 const onLoadContactApply = () => {
-  ipcMain.on('loadContactApply', async (e) => {
+  onSafe('loadContactApply', async (e) => {
     const userId = store.getUserId()
     let result = await selectSettingInfo(userId)
     let contactNoRead = 0
@@ -264,13 +288,13 @@ const onLoadContactApply = () => {
 }
 
 const onUpdateContactNoReadCount = () => {
-  ipcMain.on('updateContactNoReadCount', async (e, data) => {
-    updateContactNoReadCount({ userId: store.getUserId() })
+  onSafe('updateContactNoReadCount', async () => {
+    await updateContactNoReadCount({ userId: store.getUserId() })
   })
 }
 
 const onReLogin = (callback) => {
-  ipcMain.on('reLogin', async (e) => {
+  onSafe('reLogin', async (e) => {
     callback()
     e.sender.send('reLoginCallback')
     closeWs()
@@ -279,26 +303,26 @@ const onReLogin = (callback) => {
 }
 
 const onOpenLocalFolder = () => {
-  ipcMain.on('openLocalFolder', (e) => {
-    openLocalFolder()
+  onSafe('openLocalFolder', async () => {
+    await openLocalFolder()
   })
 }
 
 const onGetSysSetting = () => {
-  ipcMain.on('getSysSetting', async (e) => {
+  onSafe('getSysSetting', async (e) => {
     let result = await selectSettingInfo(store.getUserId())
     e.sender.send('getSysSettingCallback', result.sysSetting)
   })
 }
 
 const onChangeLocalFolder = () => {
-  ipcMain.on('changeLocalFolder', async (e) => {
-    changeLocalFolder()
+  onSafe('changeLocalFolder', async () => {
+    await changeLocalFolder()
   })
 }
 
 const onReloadChatSession = () => {
-  ipcMain.on('reloadChatSession', async (e, { contactId }) => {
+  onSafe('reloadChatSession', async (e, { contactId }) => {
     await updateStatus(contactId)
     const chatSessionList = await selectUserSessionList()
     e.sender.send('reloadChatSessionCallback', { contactId, chatSessionList })
@@ -312,13 +336,13 @@ const onOpenUrl = () => {
 }
 
 const onDownloadUpdate = () => {
-  ipcMain.on('downloadUpdate', (e, { id, fileName }) => {
-    downloadUpdate(id, fileName)
+  onSafe('downloadUpdate', async (e, { id, fileName }) => {
+    await downloadUpdate(id, fileName)
   })
 }
 
 const onLoadLocalUser = () => {
-  ipcMain.on('loadLocalUser', async (e) => {
+  onSafe('loadLocalUser', async (e) => {
     const localUser = await selectLocalUser()
     e.sender.send('loadLocalUserCallback', localUser)
   })

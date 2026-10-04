@@ -26,7 +26,9 @@ const selectUserSessionByContactId = (contactId) => {
 
 const addChatSession = (sessionInfo) => {
   sessionInfo.userId = store.getUserId()
-  insertOrIgnore('chat_session_user', sessionInfo)
+  // 必须 return：否则 insert 的 Promise 被丢弃，调用方的 await 会立刻返回，
+  // 写库失败也无人接收，最终变成 unhandled rejection。
+  return insertOrIgnore('chat_session_user', sessionInfo)
 }
 
 const updateChatSession = (sessionInfo) => {
@@ -104,7 +106,8 @@ const readAll = (contactId) => {
 const saveOrUpdate4Message = async (currentSessionId, sessionInfo) => {
   let sessionData = await selectUserSessionByContactId(sessionInfo.contactId)
   if (sessionData) {
-    updateSessionInfo4Message(currentSessionId, sessionInfo)
+    // 必须 await：这是异步函数，不 await 会丢掉 Promise，失败无人接、调用方也感知不到
+    await updateSessionInfo4Message(currentSessionId, sessionInfo)
   } else {
     sessionInfo.noReadCount = 1
     await addChatSession(sessionInfo)

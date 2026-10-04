@@ -5,7 +5,12 @@ import {
   saveOrUpdate4Message,
   selectUserSessionByContactId
 } from './db/ChatSessionUserModel'
-import { saveMessageBatch, saveMessage, updateMessage, updateStatusAsc } from './db/ChatMessageModel'
+import {
+  saveMessageBatch,
+  saveMessage,
+  updateMessage,
+  updateStatusAsc
+} from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
 import { updateGroupName } from './db/ChatSessionUserModel'
 const NODE_ENV = process.env.NODE_ENV
@@ -76,7 +81,8 @@ const createWs = () => {
     }, HEARTBEAT_INTERVAL)
   }
 
-  ws.onmessage = async (e) => {
+  // 下行消息处理逻辑抽成具名函数，注册时再由 onmessage 包一层异常收口（见下方）。
+  const onMessage = async (e) => {
     // 任何下行帧（含服务端的心跳应答「heart」）都证明链路存活，重置看门狗
     resetHeartbeatTimeout()
 
@@ -94,6 +100,7 @@ const createWs = () => {
     let dbSessionInfo = {}
     const leaveGroupUserId = message.extendData
     const sentMessageStatusList = (message.extendData || {}).sentMessageStatusList || []
+    const chatMessageList = message.extendData.chatMessageList || []
 
     switch (messageType) {
       // ws连接成功
@@ -103,7 +110,6 @@ const createWs = () => {
         // 保存消息
         // 注意：下面不能直接写 `await saveMessageBatch(...)` 然后另起一行以 `(` 开头，
         // JS 的 ASI 不会在 `(` 前补分号，两行会被解析成 saveMessageBatch(x)(y)——即把返回值当函数再调一次。
-        const chatMessageList = message.extendData.chatMessageList || []
         await saveMessageBatch(chatMessageList)
         chatMessageList.forEach(sendAck)
         // 回补「我发出的消息」的送达状态：离线期间被对方 ACK 的消息，服务端推送不到，重连时随 INIT 带回
@@ -173,7 +179,7 @@ const createWs = () => {
       // 文件上传完成
       case 6:
         // 只增不减：仅在本地状态低于目标状态时推进，避免把已送达(2)覆盖回已发送(1)
-        updateStatusAsc(message.messageId, message.status)
+        await updateStatusAsc(message.messageId, message.status)
         sender.send('receiveMessage', message)
         break
 
@@ -185,15 +191,24 @@ const createWs = () => {
 
       // 修改群昵称
       case 10:
-        updateGroupName(message.contactId, message.extendData)
+        await updateGroupName(message.contactId, message.extendData)
         sender.send('receiveMessage', message)
         break
 
       case 15:
-        updateMessage({ status: message.status }, { messageId: message.messageId })
+        await updateMessage({ status: message.status }, { messageId: message.messageId })
         sender.send('receiveMessage', message)
         break
     }
+  }
+
+  // WebSocket 的事件回调没有调用方 await，async 函数体里抛出的异常会变成
+  // unhandled rejection（Node 只打一行警告，且这条消息的后续逻辑被中断）。
+  // 统一在边界收口：处理失败打日志，但不让异常逃逸，也不影响连接继续收发。
+  ws.onmessage = (e) => {
+    onMessage(e).catch((error) => {
+      console.error(`处理下行消息失败: ${e.data}`, error)
+    })
   }
 
   ws.onclose = () => {
