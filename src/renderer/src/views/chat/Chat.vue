@@ -165,6 +165,16 @@ const chatGroupDetailRef = ref()
 
 const onReceiveMessage = () => {
   window.electron.ipcRenderer.on('receiveMessage', (e, message) => {
+    // INIT（0）：重连成功后主进程会把最新会话落库，但回给渲染进程的只有一个消息类型、不带 extendData。
+    // 这里必须单独处理并重新拉一次会话列表：
+    // 1）不能让它掉进下方通用逻辑——那里会 push(undefined)，随后比较器读 undefined.topType 抛错，
+    //    渲染函数被打断且组件不会卸载，界面从此停止更新（表现为点击联系人没反应）；
+    // 2）顺带把内存里过期的会话列表（新会话、未读数）刷新成最新。
+    if (message.messageType == 0) {
+      loadChatSession()
+      return
+    }
+
     if (message.messageType == 4) {
       loadContactApply()
       return
@@ -201,6 +211,13 @@ const onReceiveMessage = () => {
       if (localMessage != null) {
         localMessage.status = Math.max(localMessage.status, message.status) // 2 = 已送达
       }
+      return
+    }
+
+    // 兜底：走到这里的消息类型都依赖 extendData（会话信息）。
+    // 一旦缺失就直接丢弃——绝不能让 undefined 被推进 chatSessionList，
+    // 那会让渲染函数在 item.contactId 上抛错并导致界面永久停更。
+    if (message.extendData == null) {
       return
     }
 
@@ -278,6 +295,14 @@ const onLoadChatMessage = () => {
 
 // 会话列表排序
 const sortChatSessionList = (dataList) => {
+  // 兜底：先原地剔除空项。比较器要读 topType / lastReceiveTime，
+  // 列表里只要混进一个 undefined 就会抛 TypeError，把渲染过程打断且无法自行恢复。
+  // 用倒序 splice 原地删除，保持「调用方传入的数组被就地排序」这个既有语义。
+  for (let i = dataList.length - 1; i >= 0; i--) {
+    if (dataList[i] == null) {
+      dataList.splice(i, 1)
+    }
+  }
   dataList.sort((a, b) => {
     const topTypeResult = b['topType'] - a['topType']
     if (topTypeResult != 0) {
